@@ -27,58 +27,59 @@ class InvoiceController extends Controller
 {
     use SunatTrait;
     public function send(Request $request)
-{
-    $request->validate([
-        'company' => 'required|array',
-        'company.address' => 'required|array',
-        'client' => 'required|array',
-        'details' => 'required|array',
-        'details.*' => 'required|array',
-    ]);
+    {
+        $request->validate([
+            'company' => 'required|array',
+            'company.address' => 'required|array',
+            'client' => 'required|array',
+            'details' => 'required|array',
+            'details.*' => 'required|array',
+        ]);
 
-    $data = $request->all();
+        $data = $request->all();
 
-    // Se asume que el usuario está autenticado y se filtra por su RUC
-    $company = Company::where('user_id', auth()->id())
-        ->where('ruc', $data['company']['ruc'])
-        ->firstOrFail();
+        // Se asume que el usuario está autenticado y se filtra por su RUC
+        $company = Company::where('user_id', auth()->id())
+            ->where('ruc', $data['company']['ruc'])
+            ->firstOrFail();
 
-    // Calcula totales e inserta la leyenda (monto en letras) en $data
-    $this->setTotales($data);
-    $this->setLegends($data);
+        // Calcula totales e inserta la leyenda (monto en letras) en $data
+        $this->setTotales($data);
+        $this->setLegends($data);
 
-    // Se obtienen las credenciales y configuración para SUNAT
-    $sunat = new SunatService();
-    $see = $sunat->getSee($company);
+        // Se obtienen las credenciales y configuración para SUNAT
+        $sunat = new SunatService();
+        $see = $sunat->getSee($company);
 
-    // Se crea la factura (Invoice) con todos los campos
-    $invoice = $sunat->getInvoice($data);
+        // Se crea la factura (Invoice) con todos los campos
+        $invoice = $sunat->getInvoice($data);
 
-    // Envía la factura a SUNAT
-    $result = $see->send($invoice);
+        // Envía la factura a SUNAT
+        $result = $see->send($invoice);
 
-    // Genera el XML firmado
-    $xml = $see->getFactory()->getLastXml();
+        // Genera el XML firmado
+        $xml = $see->getFactory()->getLastXml();
 
-    // Obtiene el hash de la firma
-    $hash = (new XmlUtils())->getHashSign($xml);
+        // Obtiene el hash de la firma
+        $hash = (new XmlUtils())->getHashSign($xml);
 
-    // Procesa la respuesta de SUNAT
-    $sunatResponse = $sunat->sunatResponse($result);
+        // Procesa la respuesta de SUNAT
+        $sunatResponse = $sunat->sunatResponse($result);
 
-    // Se prepara la respuesta final, agregando la data procesada para visualizarla
-    $response = [
-        'xml'           => $xml,
-        'hash'          => $hash,
-        'sunatResponse' => $sunatResponse,
-        'data'          => $data, // Aquí se incluye la data original procesada
-    ];
+        // Se prepara la respuesta final, agregando la data procesada para visualizarla
+        $response = [
+            'xml'           => $xml,
+            'hash'          => $hash,
+            'sunatResponse' => $sunatResponse,
+            'data'          => $data, // Aquí se incluye la data original procesada
+        ];
 
-    return response()->json($response, 200);
-}
+        return response()->json($response, 200);
+    }
 
 
-    public function xml(Request $request ){
+    public function xml(Request $request)
+    {
         $request->validate([
             'company' => 'required|array',
             'company.address' => 'required|array',
@@ -102,11 +103,12 @@ class InvoiceController extends Controller
 
         $response['xml'] = $see->getXmlSigned($invoice);
         $response['hash'] = (new XmlUtils())->getHashSign($response['xml']);
-        
+
         return response()->json($response, 200);
     }
-    
-    public function pdf(Request $request){
+
+    public function pdf(Request $request)
+    {
         $request->validate([
             'company' => 'required|array',
             'company.address' => 'required|array',
@@ -125,11 +127,15 @@ class InvoiceController extends Controller
         $this->setLegends($data);
 
         $sunat = new SunatService();
-
         $invoice = $sunat->getInvoice($data);
 
-        $sunat->generatePdfReport($invoice);
+        // Generar PDF y obtener el contenido
+        $pdfContent = $sunat->generatePdfReport($invoice);
 
-        return $sunat->getHtmlReport($invoice);
+        // Devolver el PDF como respuesta
+        return response($pdfContent, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $invoice->getName() . '.pdf"'
+        ]);
     }
 }

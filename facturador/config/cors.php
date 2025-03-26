@@ -14,7 +14,7 @@ return [
 'allowed_methods' => explode(',', env('CORS_ALLOWED_METHODS', '*')),
 
 // Aquí definimos orígenes permitidos. No usar '*' si queremos credenciales.
-'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5174')),
+'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:5173')),
 
 
 // Si quieres usar patrones en lugar de un string fijo, aquí:
