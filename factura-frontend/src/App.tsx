@@ -16,6 +16,8 @@ import Dashboard from "./pages/Dashboard"
 import CompanyDetail from "./pages/company/CompanyDetail"
 import CompanyRegistration from "./pages/company/CompanyRegistration"
 import NuevaFactura from "./pages/facturas/NuevaFactura"
+import ListaFacturas from "./pages/facturas/ListaFacturas"
+import DetalleFactura from "./pages/facturas/DetalleFactura"
 
 // Tema personalizado
 const theme = createTheme({
@@ -99,7 +101,7 @@ function App() {
                     path="/facturas"
                     element={
                       <ProtectedRoute>
-                        #
+                        <ListaFacturas />
                       </ProtectedRoute>
                     }
                   />
@@ -112,13 +114,14 @@ function App() {
                     }
                   />
                   <Route
-                    path="/companies"
+                    path="/facturas/:id"
                     element={
                       <ProtectedRoute>
-                        #
+                        <DetalleFactura />
                       </ProtectedRoute>
                     }
                   />
+                  <Route path="/companies" element={<ProtectedRoute>#</ProtectedRoute>} />
                   <Route
                     path="/companies/new"
                     element={

@@ -20,9 +20,6 @@ import {
 import {
   Dashboard as DashboardIcon,
   Receipt as ReceiptIcon,
-  People as PeopleIcon,
-  Inventory as InventoryIcon,
-  Settings as SettingsIcon,
   ChevronLeft as ChevronLeftIcon,
   Logout as LogoutIcon,
   Business as BusinessIcon,
@@ -66,7 +63,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
     await logout()
     navigate("/login")
   }
-
 
   const drawer = (
     <>
@@ -152,7 +148,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
         </ListItem>
         <Collapse in={empresasOpen} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
-            
             <ListItemButton
               sx={{ pl: 4 }}
               selected={location.pathname === "/companies/new"}
@@ -183,7 +178,20 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
             </ListItem>
             <Collapse in={facturaOpen} timeout="auto" unmountOnExit>
               <List component="div" disablePadding>
-                
+                <ListItemButton
+                  sx={{ pl: 4 }}
+                  selected={location.pathname === "/facturas"}
+                  onClick={() => {
+                    navigate("/facturas")
+                    if (isMobile) toggleDrawer()
+                  }}
+                >
+                  <ListItemIcon>
+                    <ReceiptLongIcon />
+                  </ListItemIcon>
+                  <ListItemText primary="Ver Facturas" />
+                </ListItemButton>
+
                 <ListItemButton
                   sx={{ pl: 4 }}
                   selected={location.pathname === "/facturas/nueva"}
@@ -201,9 +209,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, toggleDrawer }) => {
             </Collapse>
           </>
         )}
-
-        
-        
       </List>
       <Divider />
       <List>

@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Grid,
@@ -68,6 +68,7 @@ import {
   LineChart,
   Line,
 } from "recharts"
+import { facturaService } from "../service/facturaService"
 
 // Mock data for charts
 const monthlyInvoiceData = [
@@ -109,7 +110,7 @@ const invoiceStatusData = [
 const COLORS = ["#4caf50", "#ff9800", "#f44336"]
 
 // Mock data for recent invoices
-const recentInvoices = [
+const recentInvoicesMock = [
   { id: "F001-00123", client: "Empresa ABC S.A.C.", date: "2023-12-15", amount: 1250.0, status: "Pagada" },
   { id: "F001-00122", client: "Comercial XYZ E.I.R.L.", date: "2023-12-14", amount: 850.5, status: "Pendiente" },
   { id: "F001-00121", client: "Distribuidora 123 S.A.", date: "2023-12-12", amount: 3200.75, status: "Pagada" },
@@ -133,6 +134,7 @@ const Dashboard: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false)
   const [timeRange, setTimeRange] = useState("month")
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [recentInvoices, setRecentInvoices] = useState<any[]>([])
 
   // Handle menu open/close
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -165,6 +167,29 @@ const Dashboard: React.FC = () => {
       navigate("/companies")
     }
   }
+
+  useEffect(() => {
+
+    // Cargar facturas recientes
+    const fetchRecentInvoices = async () => {
+      try {
+        const response = await facturaService.getFacturas()
+        if (response.success && response.facturas) {
+          // Ordenar por fecha de emisión (más recientes primero) y tomar las primeras 5
+          const recentOnes = [...response.facturas]
+            .sort((a, b) => new Date(b.fecha_emision).getTime() - new Date(a.fecha_emision).getTime())
+            .slice(0, 5)
+          setRecentInvoices(recentOnes)
+        }
+      } catch (error) {
+        console.error("Error al cargar facturas recientes:", error)
+      }
+    }
+
+    if (selectedCompany) {
+      fetchRecentInvoices()
+    }
+  }, [selectedCompany])
 
   // Si no hay empresas, mostrar un mensaje para crear una
   if (companies.length === 0) {
@@ -652,58 +677,64 @@ const Dashboard: React.FC = () => {
               />
               <CardContent sx={{ pt: 0 }}>
                 <List sx={{ width: "100%" }}>
-                  {recentInvoices.map((invoice, index) => (
-                    <React.Fragment key={invoice.id}>
-                      <ListItem
-                        alignItems="flex-start"
-                        secondaryAction={
-                          <Chip
-                            label={invoice.status}
-                            size="small"
-                            color={
-                              invoice.status === "Pagada"
-                                ? "success"
-                                : invoice.status === "Pendiente"
-                                  ? "warning"
-                                  : "error"
-                            }
-                          />
-                        }
-                        sx={{ px: 0 }}
-                      >
-                        <ListItemIcon sx={{ minWidth: 40 }}>
-                          {invoice.status === "Pagada" ? (
-                            <CheckCircle color="success" />
-                          ) : invoice.status === "Pendiente" ? (
-                            <Warning color="warning" />
-                          ) : (
-                            <Error color="error" />
-                          )}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" fontWeight="medium">
-                              {invoice.id} - {invoice.client}
-                            </Typography>
+                  {recentInvoices.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
+                      No hay facturas recientes
+                    </Typography>
+                  ) : (
+                    recentInvoices.map((invoice, index) => (
+                      <React.Fragment key={invoice.id}>
+                        <ListItem
+                          alignItems="flex-start"
+                          secondaryAction={
+                            <Chip
+                              label={invoice.estado}
+                              size="small"
+                              color={
+                                invoice.estado === "Pagada"
+                                  ? "success"
+                                  : invoice.estado === "Pendiente"
+                                    ? "warning"
+                                    : "error"
+                              }
+                            />
                           }
-                          secondary={
-                            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
-                              <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
-                                <Typography variant="caption" color="text.secondary">
-                                  {new Date(invoice.date).toLocaleDateString()}
+                          sx={{ px: 0 }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 40 }}>
+                            {invoice.estado === "Pagada" ? (
+                              <CheckCircle color="success" />
+                            ) : invoice.estado === "Pendiente" ? (
+                              <Warning color="warning" />
+                            ) : (
+                              <Error color="error" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              <Typography variant="body2" fontWeight="medium">
+                                {invoice.serie}-{invoice.correlativo} - {invoice.nombre_cliente}
+                              </Typography>
+                            }
+                            secondary={
+                              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                  <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
+                                  <Typography variant="caption" color="text.secondary">
+                                    {new Date(invoice.fecha_emision).toLocaleDateString()}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="body2" fontWeight="medium">
+                                  S/ {Number(invoice.total).toFixed(2)}
                                 </Typography>
                               </Box>
-                              <Typography variant="body2" fontWeight="medium">
-                                S/ {invoice.amount.toFixed(2)}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < recentInvoices.length - 1 && <Divider variant="inset" component="li" />}
-                    </React.Fragment>
-                  ))}
+                            }
+                          />
+                        </ListItem>
+                        {index < recentInvoices.length - 1 && <Divider variant="inset" component="li" />}
+                      </React.Fragment>
+                    ))
+                  )}
                 </List>
               </CardContent>
             </Card>

@@ -52,6 +52,7 @@ import { useCompany } from "../../contexts/CompanyContext"
 import { useFactura } from "../../contexts/FacturaContext"
 import { useTheme } from "../../contexts/ThemeContext"
 import MainLayout from "../../components/layout/MainLayout"
+import { facturaService } from "../../service/facturaService"
 
 // Solo para manejar la estructura de detalles en el Front
 interface DetalleFactura {
@@ -342,7 +343,7 @@ const NuevaFactura: React.FC = () => {
     return `${Math.floor(numero)} CON ${Math.floor((numero % 1) * 100)}/100`
   }
 
-  // Modificar la función handleEmitirFactura para guardar el XML
+  // Modificar la función handleEmitirFactura para guardar la factura en la BD
   const handleEmitirFactura = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -377,12 +378,81 @@ const NuevaFactura: React.FC = () => {
         setXmlResponse(response.xml)
       }
 
-      if (response.sunatResponse?.success) {
-        setSuccess("¡Factura generada y enviada a SUNAT con éxito!")
-        // Mostrar la vista previa después de enviar exitosamente
-        setShowPreview(true)
-      } else {
-        throw new Error("No se obtuvo confirmación exitosa de SUNAT en la respuesta")
+      // Preparar datos para guardar en la BD
+      const facturaParaBD = {
+        serie: dataToSend.serie,
+        correlativo: dataToSend.correlativo,
+        fecha_emision: dataToSend.fechaEmision.split("T")[0],
+        tipo_doc_cliente: dataToSend.client.tipoDoc,
+        num_doc_cliente: String(dataToSend.client.numDoc), // Convertir a string para asegurar formato correcto
+        nombre_cliente: dataToSend.client.rznSocial,
+        direccion_cliente: formData.direccionCliente || "", // Usar la dirección del formulario si existe
+        subtotal: Number(dataToSend.mtoOperGravadas),
+        igv: Number(dataToSend.mtoIGV),
+        total: Number(dataToSend.mtoImpVenta),
+        estado: response.sunatResponse?.success ? "Pagada" : "Pendiente",
+        company_id: Number(selectedCompany?.id),
+        // Guardar solo la información necesaria de la respuesta SUNAT
+        sunat_response: {
+          success: response.sunatResponse?.success || false,
+          error: response.sunatResponse?.error || null,
+          cdrResponse: response.sunatResponse?.cdrResponse || null,
+        },
+        detalles: dataToSend.details.map((detalle: any) => ({
+          descripcion: detalle.descripcion,
+          cantidad: Number(detalle.cantidad),
+          precio_unitario: Number(detalle.mtoPrecioUnitario),
+          subtotal: Number(detalle.mtoValorVenta + detalle.igv),
+        })),
+      }
+
+      console.log("Datos preparados para guardar en BD:", facturaParaBD)
+
+      // Guardar la factura en la BD
+      try {
+        const bdResponse = await facturaService.guardarFacturaEnBD(facturaParaBD)
+        console.log("Factura guardada en BD:", bdResponse)
+
+        if (bdResponse.success) {
+          // Si se guardó correctamente en la BD, actualizamos el mensaje de éxito
+          if (response.sunatResponse?.success) {
+            setSuccess("¡Factura generada, enviada a SUNAT y guardada en la base de datos con éxito!")
+          } else {
+            setSuccess("La factura se guardó en la base de datos, pero hubo un problema al enviarla a SUNAT.")
+            if (response.sunatResponse?.error) {
+              setError(
+                `Error SUNAT: ${response.sunatResponse.error.code || ""} - ${response.sunatResponse.error.message || "Sin detalles"}`,
+              )
+            }
+          }
+          // Mostrar la vista previa después de enviar
+          setShowPreview(true)
+        }
+      } catch (bdError: any) {
+        console.error("Error al guardar factura en BD:", bdError)
+
+        // Mostrar detalles específicos del error de validación
+        let errorMsg = `La factura se procesó con SUNAT pero no se pudo guardar en la base de datos: ${bdError.message}`
+
+        // Si hay errores de validación específicos, mostrarlos
+        if (bdError.response?.data?.errors) {
+          const validationErrors = bdError.response.data.errors
+          console.log("Errores de validación:", validationErrors)
+
+          // Convertir los errores de validación a texto
+          const errorDetails = Object.entries(validationErrors)
+            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(", ") : messages}`)
+            .join("\n")
+
+          errorMsg += `\nDetalles de validación:\n${errorDetails}`
+        }
+
+        setError(errorMsg)
+
+        // Aún así mostramos la vista previa si la respuesta de SUNAT fue exitosa
+        if (response.sunatResponse?.success) {
+          setShowPreview(true)
+        }
       }
     } catch (err: any) {
       console.error("Error al generar la factura:", err)
