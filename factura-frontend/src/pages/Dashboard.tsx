@@ -1,14 +1,12 @@
 "use client"
 
-import React from "react"
-
-import { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import {
   Box,
   Grid,
   Paper,
   Typography,
-  Divider,
   Button,
   Alert,
   IconButton,
@@ -17,146 +15,110 @@ import {
   CardContent,
   CardHeader,
   Avatar,
-  Chip,
   List,
   ListItem,
   ListItemText,
   ListItemIcon,
   LinearProgress,
-  Menu,
-  MenuItem,
-  useTheme,
+  Fade,
+  Zoom,
 } from "@mui/material"
 import {
   Receipt,
-  People,
-  Inventory,
-  AttachMoney,
   Business,
   Add,
   DarkMode,
   LightMode,
   TrendingUp,
-  TrendingDown,
-  MoreVert,
   CalendarToday,
   CheckCircle,
   Warning,
   Error,
+  Block,
   ArrowForward,
   Refresh,
   Dashboard as DashboardIcon,
-  BarChart,
   PieChart,
-  Timeline,
+  AttachMoney,
 } from "@mui/icons-material"
 import MainLayout from "../components/layout/MainLayout"
 import { useCompany } from "../contexts/CompanyContext"
 import { useTheme as useAppTheme } from "../contexts/ThemeContext"
 import { useNavigate } from "react-router-dom"
-import {
-  BarChart as RechartsBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip as RechartsTooltip,
-  ResponsiveContainer,
-  PieChart as RechartsPieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-} from "recharts"
+import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from "recharts"
 import { facturaService } from "../service/facturaService"
+import LoadingOverlay from "../components/LoadingOverlay"
 
-// Mock data for charts
-const monthlyInvoiceData = [
-  { name: "Ene", value: 12 },
-  { name: "Feb", value: 19 },
-  { name: "Mar", value: 15 },
-  { name: "Abr", value: 25 },
-  { name: "May", value: 32 },
-  { name: "Jun", value: 28 },
-  { name: "Jul", value: 35 },
-  { name: "Ago", value: 40 },
-  { name: "Sep", value: 43 },
-  { name: "Oct", value: 38 },
-  { name: "Nov", value: 45 },
-  { name: "Dic", value: 50 },
-]
+// Importar estilos específicos para esta página
+import "../css/Dashboard.css"
 
-const revenueData = [
-  { name: "Ene", value: 4000 },
-  { name: "Feb", value: 5000 },
-  { name: "Mar", value: 4500 },
-  { name: "Abr", value: 6000 },
-  { name: "May", value: 7500 },
-  { name: "Jun", value: 7000 },
-  { name: "Jul", value: 8500 },
-  { name: "Ago", value: 9000 },
-  { name: "Sep", value: 9500 },
-  { name: "Oct", value: 8800 },
-  { name: "Nov", value: 10500 },
-  { name: "Dic", value: 12000 },
-]
-
-const invoiceStatusData = [
-  { name: "Pagadas", value: 65, color: "#4caf50" },
-  { name: "Pendientes", value: 25, color: "#ff9800" },
-  { name: "Vencidas", value: 10, color: "#f44336" },
-]
-
-const COLORS = ["#4caf50", "#ff9800", "#f44336"]
-
-// Mock data for recent invoices
-const recentInvoicesMock = [
-  { id: "F001-00123", client: "Empresa ABC S.A.C.", date: "2023-12-15", amount: 1250.0, status: "Pagada" },
-  { id: "F001-00122", client: "Comercial XYZ E.I.R.L.", date: "2023-12-14", amount: 850.5, status: "Pendiente" },
-  { id: "F001-00121", client: "Distribuidora 123 S.A.", date: "2023-12-12", amount: 3200.75, status: "Pagada" },
-  { id: "F001-00120", client: "Servicios Generales Lima", date: "2023-12-10", amount: 560.0, status: "Vencida" },
-  { id: "F001-00119", client: "Importaciones del Sur", date: "2023-12-08", amount: 1890.3, status: "Pagada" },
-]
-
-// Mock data for top clients
-const topClients = [
-  { name: "Empresa ABC S.A.C.", invoices: 32, amount: 45600.0 },
-  { name: "Comercial XYZ E.I.R.L.", invoices: 28, amount: 38500.5 },
-  { name: "Distribuidora 123 S.A.", invoices: 25, amount: 32000.75 },
-  { name: "Servicios Generales Lima", invoices: 20, amount: 28600.0 },
-]
+const COLORS = ["#4caf50", "#ff9800", "#f44336", "#9e9e9e"]
 
 const Dashboard: React.FC = () => {
   const { companies, selectedCompany } = useCompany()
   const { darkMode, toggleDarkMode } = useAppTheme()
   const navigate = useNavigate()
-  const theme = useTheme()
   const [refreshing, setRefreshing] = useState(false)
-  const [timeRange, setTimeRange] = useState("month")
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [recentInvoices, setRecentInvoices] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+  const [animateRefresh, setAnimateRefresh] = useState(false)
+  const [facturasStats, setFacturasStats] = useState({
+    total: 0,
+    totalAmount: 0,
+    pagadas: 0,
+    pendientes: 0,
+    vencidas: 0,
+    anuladas: 0,
+  })
 
-  // Handle menu open/close
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget)
-  }
+  // Función para cargar facturas recientes y estadísticas
+  const fetchDashboardData = useCallback(async () => {
+    // Si ya estamos cargando o ya hemos inicializado, no hacer nada
+    if (isLoading || isInitialized || !selectedCompany) return
 
-  const handleMenuClose = () => {
-    setAnchorEl(null)
-  }
+    try {
+      setIsLoading(true)
+      const response = await facturaService.getFacturas()
 
-  // Handle time range change
-  const handleTimeRangeChange = (range: string) => {
-    setTimeRange(range)
-    handleMenuClose()
-  }
+      if (response.success && response.facturas) {
+        const facturas = response.facturas
+
+        // Ordenar por fecha de emisión (más recientes primero) y tomar las primeras 5
+        const recentOnes = [...facturas]
+          .sort((a, b) => new Date(b.fecha_emision).getTime() - new Date(a.fecha_emision).getTime())
+          .slice(0, 5)
+        setRecentInvoices(recentOnes)
+
+        // Calcular estadísticas
+        const stats = {
+          total: facturas.length,
+          totalAmount: facturas.reduce((sum: number, factura: { total: any }) => sum + Number(factura.total), 0),
+          pagadas: facturas.filter((f: { estado: string }) => f.estado === "Pagada").length,
+          pendientes: facturas.filter((f: { estado: string }) => f.estado === "Pendiente").length,
+          vencidas: facturas.filter((f: { estado: string }) => f.estado === "Vencida").length,
+          anuladas: facturas.filter((f: { estado: string }) => f.estado === "Anulada").length,
+        }
+
+        setFacturasStats(stats)
+        setIsInitialized(true)
+      }
+    } catch (error) {
+      console.error("Error al cargar datos del dashboard:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [selectedCompany, isLoading, isInitialized])
 
   // Simulate data refresh
   const handleRefresh = () => {
     setRefreshing(true)
-    setTimeout(() => {
+    setAnimateRefresh(true)
+    setIsInitialized(false) // Resetear para permitir una nueva carga
+    fetchDashboardData().finally(() => {
       setRefreshing(false)
-    }, 1500)
+      setTimeout(() => setAnimateRefresh(false), 500)
+    })
   }
 
   // Fix the navigation to the new invoice page
@@ -169,33 +131,43 @@ const Dashboard: React.FC = () => {
   }
 
   useEffect(() => {
-
-    // Cargar facturas recientes
-    const fetchRecentInvoices = async () => {
-      try {
-        const response = await facturaService.getFacturas()
-        if (response.success && response.facturas) {
-          // Ordenar por fecha de emisión (más recientes primero) y tomar las primeras 5
-          const recentOnes = [...response.facturas]
-            .sort((a, b) => new Date(b.fecha_emision).getTime() - new Date(a.fecha_emision).getTime())
-            .slice(0, 5)
-          setRecentInvoices(recentOnes)
-        }
-      } catch (error) {
-        console.error("Error al cargar facturas recientes:", error)
-      }
+    if (selectedCompany && !isInitialized && !isLoading) {
+      fetchDashboardData()
     }
+  }, [selectedCompany, fetchDashboardData, isInitialized, isLoading])
 
-    if (selectedCompany) {
-      fetchRecentInvoices()
+  // Preparar datos para el gráfico de estado de facturas
+  const invoiceStatusData = useMemo(
+    () => [
+      { name: "Pagadas", value: facturasStats.pagadas, color: "#4caf50" },
+      { name: "Pendientes", value: facturasStats.pendientes, color: "#ff9800" },
+      { name: "Vencidas", value: facturasStats.vencidas, color: "#f44336" },
+      { name: "Anuladas", value: facturasStats.anuladas, color: "#9e9e9e" },
+    ],
+    [facturasStats],
+  )
+
+  // Obtener el icono según el estado
+  const getStatusIcon = (estado: string) => {
+    switch (estado) {
+      case "Pagada":
+        return <CheckCircle className="dashboard-recent-item-status-icon" />
+      case "Pendiente":
+        return <Warning className="dashboard-recent-item-status-icon" />
+      case "Vencida":
+        return <Error className="dashboard-recent-item-status-icon" />
+      case "Anulada":
+        return <Block className="dashboard-recent-item-status-icon" />
+      default:
+        return null
     }
-  }, [selectedCompany])
+  }
 
   // Si no hay empresas, mostrar un mensaje para crear una
   if (companies.length === 0) {
     return (
       <MainLayout>
-        <Box sx={{ flexGrow: 1, p: 3 }}>
+        <Box className="dashboard-container" sx={{ flexGrow: 1, p: 3 }}>
           {/* Botón para alternar modo oscuro */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
             <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -214,25 +186,28 @@ const Dashboard: React.FC = () => {
             </Tooltip>
           </Box>
 
-          <Paper elevation={3} sx={{ p: 4, textAlign: "center" }}>
-            <Business sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
-            <Typography variant="h4" gutterBottom>
-              Bienvenido al Sistema de Facturación
-            </Typography>
-            <Typography variant="body1" paragraph>
-              Para comenzar a generar facturas, primero debes registrar una empresa.
-            </Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              startIcon={<Add />}
-              onClick={() => navigate("/companies/new")}
-              sx={{ mt: 2 }}
-            >
-              Registrar Empresa
-            </Button>
-          </Paper>
+          <Zoom in={true}>
+            <div className="dashboard-empty-state">
+              <Business className="dashboard-empty-icon" />
+              <Typography variant="h4" className="dashboard-empty-title">
+                Bienvenido al Sistema de Facturación
+              </Typography>
+              <Typography variant="body1" className="dashboard-empty-description">
+                Para comenzar a generar facturas, primero debes registrar una empresa. Esto te permitirá gestionar tus
+                documentos electrónicos de manera eficiente.
+              </Typography>
+              <Button
+                variant="contained"
+                color="primary"
+                size="large"
+                startIcon={<Add />}
+                onClick={() => navigate("/companies/new")}
+                className="dashboard-empty-button"
+              >
+                Registrar Empresa
+              </Button>
+            </div>
+          </Zoom>
         </Box>
       </MainLayout>
     )
@@ -242,7 +217,7 @@ const Dashboard: React.FC = () => {
   if (!selectedCompany) {
     return (
       <MainLayout>
-        <Box sx={{ flexGrow: 1, p: 3 }}>
+        <Box className="dashboard-container" sx={{ flexGrow: 1, p: 3 }}>
           {/* Botón para alternar modo oscuro */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
             <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -261,44 +236,50 @@ const Dashboard: React.FC = () => {
             </Tooltip>
           </Box>
 
-          <Alert severity="info" sx={{ mb: 3 }}>
-            Selecciona una empresa para comenzar a trabajar
-          </Alert>
+          <Fade in={true}>
+            <Alert severity="info" sx={{ mb: 3 }} className="alert-animation">
+              Selecciona una empresa para comenzar a trabajar
+            </Alert>
+          </Fade>
+
           <Grid container spacing={3}>
             {companies.map((company) => (
               <Grid item xs={12} md={4} key={company.ruc}>
                 <Paper
                   elevation={3}
-                  sx={{
-                    p: 3,
-                    display: "flex",
-                    flexDirection: "column",
-                    height: "100%",
-                    cursor: "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: 6,
-                    },
-                  }}
+                  className="dashboard-company-card"
                   onClick={() => navigate(`/companies/${company.ruc}`)}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Business sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-                    <Typography variant="h5" component="div">
-                      {company.razon_social}
+                  <Box sx={{ p: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                      <Avatar
+                        className="dashboard-company-avatar"
+                        sx={{
+                          width: 56,
+                          height: 56,
+                          bgcolor: "primary.main",
+                          mr: 2,
+                        }}
+                      >
+                        <Business sx={{ fontSize: 32 }} />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h5" component="div" className="dashboard-company-name">
+                          {company.razon_social}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" className="dashboard-company-info">
+                          RUC: {company.ruc}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary" className="dashboard-company-info">
+                      {company.direccion}
                     </Typography>
-                  </Box>
-                  <Typography variant="body1" color="text.secondary" gutterBottom>
-                    RUC: {company.ruc}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {company.direccion}
-                  </Typography>
-                  <Box sx={{ mt: "auto", pt: 2 }}>
-                    <Button variant="contained" fullWidth>
-                      Seleccionar
-                    </Button>
+                    <Box className="dashboard-company-buttons">
+                      <Button variant="contained" fullWidth>
+                        Seleccionar
+                      </Button>
+                    </Box>
                   </Box>
                 </Paper>
               </Grid>
@@ -312,39 +293,27 @@ const Dashboard: React.FC = () => {
   // Dashboard normal con empresa seleccionada
   return (
     <MainLayout>
-      <Box sx={{ flexGrow: 1, p: 3 }}>
+      {isLoading && !refreshing && <LoadingOverlay message="Cargando datos..." />}
+
+      <Box className="dashboard-container" sx={{ flexGrow: 1, p: 3 }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
-          <Box sx={{ display: "flex", alignItems: "center" }}>
-            <DashboardIcon sx={{ fontSize: 32, color: "primary.main", mr: 1.5 }} />
-            <Typography variant="h4" fontWeight="medium">
+          <Box className="dashboard-header">
+            <DashboardIcon className="dashboard-header-icon" />
+            <Typography variant="h4" className="dashboard-title">
               Dashboard
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Button
               variant="outlined"
-              startIcon={<Refresh />}
+              className="btn-actualizar"
               onClick={handleRefresh}
               disabled={refreshing}
               size="small"
             >
+              <Refresh className={`refresh-icon ${animateRefresh ? "animate-spin" : ""}`} sx={{ mr: 1 }} />
               {refreshing ? "Actualizando..." : "Actualizar"}
             </Button>
-            <Button variant="outlined" endIcon={<MoreVert />} onClick={handleMenuClick} size="small">
-              {timeRange === "day"
-                ? "Hoy"
-                : timeRange === "week"
-                  ? "Esta semana"
-                  : timeRange === "month"
-                    ? "Este mes"
-                    : "Este año"}
-            </Button>
-            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-              <MenuItem onClick={() => handleTimeRangeChange("day")}>Hoy</MenuItem>
-              <MenuItem onClick={() => handleTimeRangeChange("week")}>Esta semana</MenuItem>
-              <MenuItem onClick={() => handleTimeRangeChange("month")}>Este mes</MenuItem>
-              <MenuItem onClick={() => handleTimeRangeChange("year")}>Este año</MenuItem>
-            </Menu>
             <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
               <IconButton
                 onClick={toggleDarkMode}
@@ -365,9 +334,10 @@ const Dashboard: React.FC = () => {
         {refreshing && <LinearProgress sx={{ mb: 3 }} />}
 
         {/* Información de la empresa */}
-        <Paper elevation={3} sx={{ p: 3, mb: 4, mt: 1, borderRadius: 2 }}>
+        <Paper elevation={3} className="dashboard-company-card" sx={{ p: 3, mb: 4, mt: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Avatar
+              className="dashboard-company-avatar"
               sx={{
                 width: 56,
                 height: 56,
@@ -378,18 +348,24 @@ const Dashboard: React.FC = () => {
               <Business sx={{ fontSize: 32 }} />
             </Avatar>
             <Box>
-              <Typography variant="h5" component="div" fontWeight="bold">
+              <Typography variant="h5" component="div" className="dashboard-company-name" fontWeight="bold">
                 {selectedCompany.razon_social}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" className="dashboard-company-info">
                 RUC: {selectedCompany.ruc} • {selectedCompany.direccion}
               </Typography>
             </Box>
-            <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
+            <Box sx={{ ml: "auto", display: "flex", gap: 1 }} className="dashboard-company-buttons">
               <Button variant="outlined" color="primary" onClick={() => navigate(`/companies/${selectedCompany.ruc}`)}>
                 Ver Detalles
               </Button>
-              <Button variant="contained" color="primary" onClick={handleCreateInvoice} startIcon={<Add />}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleCreateInvoice}
+                startIcon={<Add />}
+                className="dashboard-empty-button"
+              >
                 Nueva Factura
               </Button>
             </Box>
@@ -397,451 +373,253 @@ const Dashboard: React.FC = () => {
         </Paper>
 
         {/* Tarjetas de resumen */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                borderRadius: 2,
-                height: "100%",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: 6,
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Ventas Totales
-                  </Typography>
-                  <Avatar sx={{ bgcolor: "primary.light", width: 40, height: 40 }}>
-                    <AttachMoney />
-                  </Avatar>
-                </Box>
-                <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1 }}>
-                  S/. 12,450.00
+        <div className="dashboard-stats-container">
+          <Card elevation={2} className="dashboard-stat-card">
+            <CardContent>
+              <Box className="dashboard-stat-header">
+                <Typography className="dashboard-stat-title">Ventas Totales</Typography>
+                <Avatar className="dashboard-stat-avatar" sx={{ bgcolor: "primary.light" }}>
+                  <AttachMoney />
+                </Avatar>
+              </Box>
+              <Typography variant="h4" component="div" className="dashboard-stat-value">
+                S/. {facturasStats.totalAmount.toFixed(2)}
+              </Typography>
+              <Box className="dashboard-stat-trend">
+                <TrendingUp className="dashboard-stat-trend-icon" />
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
+                  Total de ventas
                 </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <TrendingUp sx={{ color: "success.main", mr: 0.5, fontSize: 20 }} />
-                  <Typography variant="body2" color="success.main" fontWeight="medium">
-                    +15%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs. mes anterior
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                borderRadius: 2,
-                height: "100%",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: 6,
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Facturas
-                  </Typography>
-                  <Avatar sx={{ bgcolor: "success.light", width: 40, height: 40 }}>
-                    <Receipt />
-                  </Avatar>
-                </Box>
-                <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1 }}>
-                  45
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <TrendingUp sx={{ color: "success.main", mr: 0.5, fontSize: 20 }} />
-                  <Typography variant="body2" color="success.main" fontWeight="medium">
-                    +8%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs. mes anterior
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                borderRadius: 2,
-                height: "100%",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: 6,
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Clientes
-                  </Typography>
-                  <Avatar sx={{ bgcolor: "warning.light", width: 40, height: 40 }}>
-                    <People />
-                  </Avatar>
-                </Box>
-                <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1 }}>
-                  28
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <TrendingUp sx={{ color: "success.main", mr: 0.5, fontSize: 20 }} />
-                  <Typography variant="body2" color="success.main" fontWeight="medium">
-                    +3%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs. mes anterior
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={2}
-              sx={{
-                borderRadius: 2,
-                height: "100%",
-                transition: "transform 0.2s",
-                "&:hover": {
-                  transform: "translateY(-5px)",
-                  boxShadow: 6,
-                },
-              }}
-            >
-              <CardContent>
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Productos
-                  </Typography>
-                  <Avatar sx={{ bgcolor: "info.light", width: 40, height: 40 }}>
-                    <Inventory />
-                  </Avatar>
-                </Box>
-                <Typography variant="h4" component="div" fontWeight="bold" sx={{ mb: 1 }}>
-                  124
-                </Typography>
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <TrendingDown sx={{ color: "error.main", mr: 0.5, fontSize: 20 }} />
-                  <Typography variant="body2" color="error.main" fontWeight="medium">
-                    -2%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 0.5 }}>
-                    vs. mes anterior
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+              </Box>
+            </CardContent>
+          </Card>
 
-        {/* Gráficos y estadísticas */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={8}>
-            <Card elevation={2} sx={{ borderRadius: 2, height: "100%" }}>
-              <CardHeader
-                title="Facturas Emitidas"
-                subheader={`Evolución de facturas emitidas (${timeRange === "day" ? "Hoy" : timeRange === "week" ? "Esta semana" : timeRange === "month" ? "Este mes" : "Este año"})`}
-                action={
-                  <IconButton>
-                    <BarChart />
-                  </IconButton>
-                }
-              />
-              <CardContent>
-                <Box sx={{ height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RechartsBarChart
-                      data={monthlyInvoiceData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <RechartsTooltip />
-                      <Bar dataKey="value" fill={theme.palette.primary.main} />
-                    </RechartsBarChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card elevation={2} sx={{ borderRadius: 2, height: "100%" }}>
-              <CardHeader
-                title="Estado de Facturas"
-                subheader="Distribución por estado"
-                action={
-                  <IconButton>
-                    <PieChart />
-                  </IconButton>
-                }
-              />
-              <CardContent>
-                <Box sx={{ height: 300, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <ResponsiveContainer width="100%" height="80%">
-                    <RechartsPieChart>
-                      <Pie
-                        data={invoiceStatusData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {invoiceStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
-                  <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
-                    {invoiceStatusData.map((entry, index) => (
-                      <Box key={index} sx={{ display: "flex", alignItems: "center" }}>
-                        <Box sx={{ width: 12, height: 12, borderRadius: "50%", bgcolor: COLORS[index], mr: 1 }} />
-                        <Typography variant="body2">{entry.name}</Typography>
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          <Card elevation={2} className="dashboard-stat-card">
+            <CardContent>
+              <Box className="dashboard-stat-header">
+                <Typography className="dashboard-stat-title">Facturas</Typography>
+                <Avatar className="dashboard-stat-avatar" sx={{ bgcolor: "success.light" }}>
+                  <Receipt />
+                </Avatar>
+              </Box>
+              <Typography variant="h4" component="div" className="dashboard-stat-value">
+                {facturasStats.total}
+              </Typography>
+              <Box className="dashboard-stat-trend">
+                <Typography variant="body2" color="text.secondary">
+                  Total de facturas emitidas
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
 
-        {/* Ingresos y Facturas Recientes */}
-        <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} md={8}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardHeader
-                title="Ingresos"
-                subheader={`Evolución de ingresos (${timeRange === "day" ? "Hoy" : timeRange === "week" ? "Esta semana" : timeRange === "month" ? "Este mes" : "Este año"})`}
-                action={
-                  <IconButton>
-                    <Timeline />
-                  </IconButton>
-                }
-              />
-              <CardContent>
-                <Box sx={{ height: 300 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={revenueData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <RechartsTooltip formatter={(value) => [`S/ ${value}`, "Ingresos"]} />
-                      <Line type="monotone" dataKey="value" stroke={theme.palette.primary.main} activeDot={{ r: 8 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Card elevation={2} sx={{ borderRadius: 2, height: "100%" }}>
-              <CardHeader
-                title="Facturas Recientes"
-                action={
-                  <Button endIcon={<ArrowForward />} size="small" onClick={() => navigate("/facturas")}>
-                    Ver todas
-                  </Button>
-                }
-              />
-              <CardContent sx={{ pt: 0 }}>
-                <List sx={{ width: "100%" }}>
-                  {recentInvoices.length === 0 ? (
-                    <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 2 }}>
-                      No hay facturas recientes
-                    </Typography>
-                  ) : (
-                    recentInvoices.map((invoice, index) => (
-                      <React.Fragment key={invoice.id}>
-                        <ListItem
-                          alignItems="flex-start"
-                          secondaryAction={
-                            <Chip
-                              label={invoice.estado}
-                              size="small"
-                              color={
-                                invoice.estado === "Pagada"
-                                  ? "success"
-                                  : invoice.estado === "Pendiente"
-                                    ? "warning"
-                                    : "error"
-                              }
-                            />
-                          }
-                          sx={{ px: 0 }}
+          <Card elevation={2} className="dashboard-stat-card">
+            <CardContent>
+              <Box className="dashboard-stat-header">
+                <Typography className="dashboard-stat-title">Facturas Pagadas</Typography>
+                <Avatar className="dashboard-stat-avatar" sx={{ bgcolor: "success.main" }}>
+                  <CheckCircle />
+                </Avatar>
+              </Box>
+              <Typography variant="h4" component="div" className="dashboard-stat-value">
+                {facturasStats.pagadas}
+              </Typography>
+              <Box className="dashboard-stat-trend">
+                <Typography variant="body2" color="text.secondary">
+                  Facturas con estado "Pagada"
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+
+          <Card elevation={2} className="dashboard-stat-card">
+            <CardContent>
+              <Box className="dashboard-stat-header">
+                <Typography className="dashboard-stat-title">Facturas Pendientes</Typography>
+                <Avatar className="dashboard-stat-avatar" sx={{ bgcolor: "warning.main" }}>
+                  <Warning />
+                </Avatar>
+              </Box>
+              <Typography variant="h4" component="div" className="dashboard-stat-value">
+                {facturasStats.pendientes}
+              </Typography>
+              <Box className="dashboard-stat-trend">
+                <Typography variant="body2" color="text.secondary">
+                  Facturas con estado "Pendiente"
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Gráfico de estado de facturas y Facturas Recientes */}
+        <div className="dashboard-charts-container">
+          <Card elevation={2} className="dashboard-chart-card">
+            <CardHeader
+              title={<Typography className="dashboard-chart-title">Estado de Facturas</Typography>}
+              subheader="Distribución por estado"
+              action={
+                <IconButton>
+                  <PieChart />
+                </IconButton>
+              }
+            />
+            <CardContent>
+              <Box className="dashboard-chart-content">
+                {facturasStats.total > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height="80%">
+                      <RechartsPieChart>
+                        <Pie
+                          data={invoiceStatusData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                         >
-                          <ListItemIcon sx={{ minWidth: 40 }}>
-                            {invoice.estado === "Pagada" ? (
-                              <CheckCircle color="success" />
-                            ) : invoice.estado === "Pendiente" ? (
-                              <Warning color="warning" />
-                            ) : (
-                              <Error color="error" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Typography variant="body2" fontWeight="medium">
-                                {invoice.serie}-{invoice.correlativo} - {invoice.nombre_cliente}
-                              </Typography>
-                            }
-                            secondary={
-                              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
-                                <Box sx={{ display: "flex", alignItems: "center" }}>
-                                  <CalendarToday sx={{ fontSize: 14, mr: 0.5 }} />
-                                  <Typography variant="caption" color="text.secondary">
-                                    {new Date(invoice.fecha_emision).toLocaleDateString()}
-                                  </Typography>
-                                </Box>
-                                <Typography variant="body2" fontWeight="medium">
-                                  S/ {Number(invoice.total).toFixed(2)}
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                        {index < recentInvoices.length - 1 && <Divider variant="inset" component="li" />}
-                      </React.Fragment>
-                    ))
-                  )}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                          {invoiceStatusData.map((_entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                    <div className="dashboard-chart-legend">
+                      {invoiceStatusData.map((entry, index) => (
+                        <div key={index} className="dashboard-chart-legend-item">
+                          <div className="dashboard-chart-legend-color" style={{ backgroundColor: COLORS[index] }} />
+                          <Typography variant="body2" className="dashboard-chart-legend-label">
+                            {entry.name}
+                          </Typography>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%" }}>
+                    <Typography variant="body1" color="text.secondary">
+                      No hay datos disponibles
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </CardContent>
+          </Card>
 
-        {/* Clientes principales y Acciones rápidas */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardHeader
-                title="Clientes Principales"
-                action={
-                  <Button endIcon={<ArrowForward />} size="small" onClick={() => navigate("/clientes")}>
-                    Ver todos
-                  </Button>
-                }
-              />
-              <CardContent sx={{ pt: 0 }}>
-                <List sx={{ width: "100%" }}>
-                  {topClients.map((client, index) => (
-                    <React.Fragment key={client.name}>
-                      <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                        <ListItemIcon sx={{ minWidth: 40 }}>
-                          <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.light", fontSize: "0.875rem" }}>
-                            {client.name.charAt(0)}
-                          </Avatar>
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={
-                            <Typography variant="body2" fontWeight="medium">
-                              {client.name}
+          <Card elevation={2} className="dashboard-recent-container">
+            <div className="dashboard-recent-header">
+              <Typography className="dashboard-recent-title">Facturas Recientes</Typography>
+              <Button
+                className="dashboard-recent-view-all"
+                onClick={() => navigate("/facturas")}
+                endIcon={<ArrowForward className="dashboard-recent-view-all-icon" />}
+                size="small"
+              >
+                Ver todas
+              </Button>
+            </div>
+            <List className="dashboard-recent-list">
+              {recentInvoices.length === 0 ? (
+                <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", p: 3 }}>
+                  <Typography variant="body2" color="text.secondary" align="center">
+                    No hay facturas recientes
+                  </Typography>
+                </Box>
+              ) : (
+                recentInvoices.map((invoice) => (
+                  <ListItem
+                    key={invoice.id}
+                    className="dashboard-recent-item"
+                    onClick={() => navigate(`/facturas/${invoice.id}`)}
+                    sx={{ cursor: "pointer" }}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40 }}>
+                      {invoice.estado === "Pagada" ? (
+                        <CheckCircle color="success" />
+                      ) : invoice.estado === "Pendiente" ? (
+                        <Warning color="warning" />
+                      ) : invoice.estado === "Vencida" ? (
+                        <Error color="error" />
+                      ) : (
+                        <Block />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <div className="dashboard-recent-item-content">
+                          <div className="dashboard-recent-item-info">
+                            <Typography className="dashboard-recent-item-title">
+                              {invoice.serie}-{invoice.correlativo} - {invoice.nombre_cliente}
                             </Typography>
-                          }
-                          secondary={
-                            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.5 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                {client.invoices} facturas
+                            <div className="dashboard-recent-item-subtitle">
+                              <CalendarToday className="dashboard-recent-item-date-icon" />
+                              <Typography component="span" variant="caption" color="text.secondary">
+                                {new Date(invoice.fecha_emision).toLocaleDateString()}
                               </Typography>
-                              <Typography variant="body2" fontWeight="medium">
-                                S/ {client.amount.toFixed(2)}
-                              </Typography>
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      {index < topClients.length - 1 && <Divider variant="inset" component="li" />}
-                    </React.Fragment>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card elevation={2} sx={{ borderRadius: 2 }}>
-              <CardHeader title="Acciones Rápidas" />
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<Receipt />}
-                      onClick={() => navigate("/facturas/nueva")}
-                      sx={{ py: 1.5, justifyContent: "flex-start" }}
-                    >
-                      Nueva Factura
-                    </Button>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<People />}
-                      onClick={() => navigate("/clientes/nuevo")}
-                      sx={{ py: 1.5, justifyContent: "flex-start" }}
-                    >
-                      Nuevo Cliente
-                    </Button>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<Inventory />}
-                      onClick={() => navigate("/productos/nuevo")}
-                      sx={{ py: 1.5, justifyContent: "flex-start" }}
-                    >
-                      Nuevo Producto
-                    </Button>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <Button
-                      variant="outlined"
-                      fullWidth
-                      startIcon={<Business />}
-                      onClick={() => navigate("/companies/new")}
-                      sx={{ py: 1.5, justifyContent: "flex-start" }}
-                    >
-                      Nueva Empresa
-                    </Button>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+                            </div>
+                          </div>
+                          <div className="dashboard-recent-item-status-container">
+                            <Typography className="dashboard-recent-item-amount">
+                              S/ {Number(invoice.total).toFixed(2)}
+                            </Typography>
+                            <div className={`dashboard-recent-item-status ${invoice.estado.toLowerCase()}`}>
+                              {getStatusIcon(invoice.estado)}
+                              {invoice.estado}
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    />
+                  </ListItem>
+                ))
+              )}
+            </List>
+          </Card>
+        </div>
+
+        {/* Acciones rápidas */}
+        <Card elevation={2} className="dashboard-actions-container">
+          <div className="dashboard-actions-header">
+            <Typography className="dashboard-actions-title">Acciones Rápidas</Typography>
+          </div>
+          <div className="dashboard-actions-content">
+            <Button
+              variant="outlined"
+              className="dashboard-action-button"
+              startIcon={<Receipt className="dashboard-action-button-icon" />}
+              onClick={() => navigate("/facturas/nueva")}
+            >
+              Nueva Factura
+            </Button>
+            <Button
+              variant="outlined"
+              className="dashboard-action-button"
+              startIcon={<ArrowForward className="dashboard-action-button-icon" />}
+              onClick={() => navigate("/facturas")}
+            >
+              Ver Facturas
+            </Button>
+            <Button
+              variant="outlined"
+              className="dashboard-action-button"
+              startIcon={<Business className="dashboard-action-button-icon" />}
+              onClick={() => navigate(`/companies/${selectedCompany.ruc}`)}
+            >
+              Detalles de Empresa
+            </Button>
+            <Button
+              variant="outlined"
+              className="dashboard-action-button"
+              startIcon={<Add className="dashboard-action-button-icon" />}
+              onClick={() => navigate("/companies/new")}
+            >
+              Nueva Empresa
+            </Button>
+          </div>
+        </Card>
       </Box>
     </MainLayout>
   )

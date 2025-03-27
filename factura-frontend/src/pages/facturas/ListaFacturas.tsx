@@ -2,52 +2,55 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Box,
   Paper,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Chip,
-  Tooltip,
-  CircularProgress,
-  Alert,
+  TextField,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
-  TextField,
-  InputAdornment,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
+  IconButton,
+  Tooltip,
+  CircularProgress,
+  Alert,
+  Zoom,
+  Fade,
 } from "@mui/material"
 import {
   Receipt,
   PictureAsPdf,
   Delete,
-  Edit,
-  Visibility,
   Search,
   FilterList,
   Refresh,
   ArrowBack,
   DarkMode,
   LightMode,
+  CheckCircle,
+  Warning,
+  Error,
+  Block,
+  Add,
+  ReceiptLong,
 } from "@mui/icons-material"
-import { useNavigate } from "react-router-dom"
 import { useCompany } from "../../contexts/CompanyContext"
 import { facturaService } from "../../service/facturaService"
 import { useTheme } from "../../contexts/ThemeContext"
 import MainLayout from "../../components/layout/MainLayout"
+import LoadingOverlay from "../../components/LoadingOverlay"
+
+// Importar estilos específicos para esta página
+import "../../css/ListaFacturas.css"
 
 const ListaFacturas: React.FC = () => {
   const navigate = useNavigate()
@@ -63,19 +66,43 @@ const ListaFacturas: React.FC = () => {
   const [filterEstado, setFilterEstado] = useState("Todos")
   const [refreshing, setRefreshing] = useState(false)
   const [pdfLoading, setPdfLoading] = useState<string | null>(null)
+  const [hasLoadedFacturas, setHasLoadedFacturas] = useState(false)
+  const [animateRefresh, setAnimateRefresh] = useState(false)
 
   // Cargar facturas al montar el componente
   useEffect(() => {
-    fetchFacturas()
-  }, [selectedCompany])
+    if (!hasLoadedFacturas) {
+      fetchFacturas()
+    }
+  }, [selectedCompany, hasLoadedFacturas])
+
+  // Efecto para limpiar mensajes después de un tiempo
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess(null)
+      }, 5000)
+      return () => clearTimeout(timer)
+    }
+
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null)
+      }, 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [success, error])
 
   const fetchFacturas = async () => {
+    if (loading && hasLoadedFacturas) return
+
     try {
       setLoading(true)
       setError(null)
       const response = await facturaService.getFacturas()
       if (response.success) {
         setFacturas(response.facturas || [])
+        setHasLoadedFacturas(true)
       } else {
         setError("Error al cargar las facturas")
       }
@@ -89,12 +116,14 @@ const ListaFacturas: React.FC = () => {
 
   const handleRefresh = () => {
     setRefreshing(true)
+    setAnimateRefresh(true)
+    setHasLoadedFacturas(false)
     fetchFacturas().finally(() => {
       setRefreshing(false)
+      setTimeout(() => setAnimateRefresh(false), 500)
     })
   }
 
-  // Modificar el método handleGenerarPDF para mostrar un mensaje de error más detallado
   const handleGenerarPDF = async (id: string) => {
     try {
       setPdfLoading(id)
@@ -117,7 +146,7 @@ const ListaFacturas: React.FC = () => {
           link.click()
           URL.revokeObjectURL(pdfUrl)
 
-          setSuccess("PDF generado correctamente")
+          setSuccess("PDF generado y descargado correctamente")
         } else {
           // Si no es un PDF, mostrar un error
           setError("El servidor no devolvió un PDF válido. Contacte al administrador.")
@@ -145,17 +174,7 @@ const ListaFacturas: React.FC = () => {
         }
       } catch (err: any) {
         console.error("Error al generar PDF:", err)
-
-        // Mostrar un mensaje de error más descriptivo
-        let errorMessage = err.message || "Error al generar PDF"
-
-        // Agregar sugerencia para solucionar el problema
-        if (errorMessage.includes("500") || errorMessage.includes("interno del servidor")) {
-          errorMessage +=
-            "\n\nSugerencia: Verifique que en el backend, el método generatePdfReport() en SunatService.php esté devolviendo el PDF en lugar de solo guardarlo en el almacenamiento."
-        }
-
-        setError(errorMessage)
+        setError(err.message || "Error al generar PDF")
       }
     } finally {
       setPdfLoading(null)
@@ -224,25 +243,32 @@ const ListaFacturas: React.FC = () => {
     return matchesSearch && matchesEstado
   })
 
-  // Obtener el color del chip según el estado
-  const getChipColor = (estado: string) => {
+  // Obtener el icono según el estado
+  const getStatusIcon = (estado: string) => {
     switch (estado) {
       case "Pagada":
-        return "success"
+        return <CheckCircle className="facturas-chip-icon" />
       case "Pendiente":
-        return "warning"
+        return <Warning className="facturas-chip-icon" />
       case "Vencida":
-        return "error"
+        return <Error className="facturas-chip-icon" />
       case "Anulada":
-        return "default"
+        return <Block className="facturas-chip-icon" />
       default:
-        return "default"
+        return null
     }
+  }
+
+  // Función para navegar a la factura al hacer clic en la fila
+  const handleRowClick = (id: string) => {
+    navigate(`/facturas/${id}`)
   }
 
   return (
     <MainLayout>
-      <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+      {loading && !refreshing && <LoadingOverlay message="Cargando facturas..." />}
+
+      <Box className="facturas-container" sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
         {/* Botón para alternar modo oscuro */}
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
           <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -261,33 +287,39 @@ const ListaFacturas: React.FC = () => {
           </Tooltip>
         </Box>
 
-        <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-            <Receipt sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-            <Typography variant="h4">Facturas Emitidas</Typography>
+        <Paper elevation={3} sx={{ p: { xs: 2, md: 3 }, mb: 4, borderRadius: 2 }}>
+          <Box className="facturas-header">
+            <Receipt className="facturas-header-icon" />
+            <Typography variant="h4" className="facturas-title">
+              Facturas Emitidas
+            </Typography>
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
+            <Fade in={!!error}>
+              <Alert severity="error" sx={{ mb: 3 }} className="alert-animation">
+                {error}
+              </Alert>
+            </Fade>
           )}
 
           {success && (
-            <Alert severity="success" sx={{ mb: 3 }}>
-              {success}
-            </Alert>
+            <Fade in={!!success}>
+              <Alert severity="success" sx={{ mb: 3 }} className="alert-animation">
+                {success}
+              </Alert>
+            </Fade>
           )}
 
           {/* Filtros y búsqueda */}
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 3 }}>
+          <Box className="facturas-filters">
             <TextField
               label="Buscar"
               variant="outlined"
               size="small"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ flexGrow: 1, minWidth: "200px" }}
+              className="facturas-search"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -297,7 +329,7 @@ const ListaFacturas: React.FC = () => {
               }}
             />
 
-            <FormControl size="small" sx={{ minWidth: "150px" }}>
+            <FormControl size="small" className="facturas-filter-select">
               <InputLabel id="filter-estado-label">Estado</InputLabel>
               <Select
                 labelId="filter-estado-label"
@@ -318,122 +350,156 @@ const ListaFacturas: React.FC = () => {
               </Select>
             </FormControl>
 
-            <Button variant="outlined" startIcon={<Refresh />} onClick={handleRefresh} disabled={refreshing}>
+            <Button variant="outlined" className="btn-actualizar" onClick={handleRefresh} disabled={refreshing}>
+              <Refresh className={`refresh-icon ${animateRefresh ? "animate-spin" : ""}`} sx={{ mr: 1 }} />
               {refreshing ? "Actualizando..." : "Actualizar"}
             </Button>
 
-            <Button variant="contained" startIcon={<Receipt />} onClick={() => navigate("/facturas/nueva")}>
+            <Button
+              variant="contained"
+              className="btn-nueva-factura"
+              onClick={() => navigate("/facturas/nueva")}
+              startIcon={<Add />}
+            >
               Nueva Factura
             </Button>
           </Box>
 
           {/* Tabla de facturas */}
-          {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
+          {refreshing ? (
+            <Box className="facturas-loading">
               <CircularProgress />
             </Box>
-          ) : filteredFacturas.length === 0 ? (
-            <Alert severity="info">
-              No se encontraron facturas. {searchTerm || filterEstado !== "Todos" ? "Intenta con otros filtros." : ""}
-            </Alert>
+          ) : filteredFacturas.length === 0 && !loading ? (
+            <Box className="facturas-empty">
+              <ReceiptLong className="facturas-empty-icon" />
+              <Typography variant="h6" gutterBottom>
+                No se encontraron facturas
+              </Typography>
+              <Typography variant="body1">
+                {searchTerm || filterEstado !== "Todos"
+                  ? "Intenta con otros filtros o crea una nueva factura."
+                  : "Comienza creando tu primera factura."}
+              </Typography>
+            </Box>
           ) : (
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Serie-Correlativo</TableCell>
-                    <TableCell>Fecha Emisión</TableCell>
-                    <TableCell>Cliente</TableCell>
-                    <TableCell>Total</TableCell>
-                    <TableCell>Estado</TableCell>
-                    <TableCell align="center">Acciones</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
+            <div className="facturas-table-container">
+              <table className="facturas-table">
+                <thead className="facturas-table-head">
+                  <tr>
+                    <th>Serie-Correlativo</th>
+                    <th>Fecha Emisión</th>
+                    <th>Cliente</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {filteredFacturas.map((factura) => (
-                    <TableRow key={factura.id}>
-                      <TableCell>
+                    <tr
+                      key={factura.id}
+                      className="facturas-table-row"
+                      onClick={() => handleRowClick(factura.id)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td className="facturas-table-cell">
                         {factura.serie}-{factura.correlativo}
-                      </TableCell>
-                      <TableCell>{new Date(factura.fecha_emision).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Typography variant="body2" noWrap>
-                          {factura.nombre_cliente}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {factura.tipo_doc_cliente === "6" ? "RUC: " : "Doc: "}
-                          {factura.num_doc_cliente}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>S/ {Number.parseFloat(factura.total).toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Chip label={factura.estado} color={getChipColor(factura.estado)} size="small" />
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
-                          <Tooltip title="Ver detalles">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => navigate(`/facturas/${factura.id}`)}
-                            >
-                              <Visibility fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-
+                      </td>
+                      <td className="facturas-table-cell">{new Date(factura.fecha_emision).toLocaleDateString()}</td>
+                      <td className="facturas-table-cell">
+                        <div className="facturas-cliente-info">
+                          <span className="facturas-cliente-nombre">{factura.nombre_cliente}</span>
+                          <span className="facturas-cliente-doc">
+                            {factura.tipo_doc_cliente === "6" ? "RUC: " : "Doc: "}
+                            {factura.num_doc_cliente}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="facturas-table-cell facturas-monto">
+                        S/ {Number.parseFloat(factura.total).toFixed(2)}
+                      </td>
+                      <td className="facturas-table-cell">
+                        <div className={`facturas-chip ${factura.estado.toLowerCase()}`}>
+                          {getStatusIcon(factura.estado)}
+                          {factura.estado}
+                        </div>
+                      </td>
+                      <td className="facturas-table-cell" onClick={(e) => e.stopPropagation()}>
+                        <div className="facturas-actions">
                           <Tooltip title="Generar PDF">
-                            <IconButton
-                              size="small"
-                              color="secondary"
-                              onClick={() => handleGenerarPDF(factura.id)}
+                            <button
+                              className="facturas-action-button pdf"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleGenerarPDF(factura.id)
+                              }}
                               disabled={factura.estado === "Anulada" || pdfLoading === factura.id}
                             >
                               {pdfLoading === factura.id ? (
-                                <CircularProgress size={20} color="secondary" />
+                                <CircularProgress size={16} />
                               ) : (
                                 <PictureAsPdf fontSize="small" />
                               )}
-                            </IconButton>
+                            </button>
                           </Tooltip>
 
                           {factura.estado !== "Anulada" && (
                             <Tooltip title="Anular factura">
-                              <IconButton size="small" color="error" onClick={() => handleAnularFactura(factura.id)}>
+                              <button
+                                className="facturas-action-button delete"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAnularFactura(factura.id)
+                                }}
+                              >
                                 <Delete fontSize="small" />
-                              </IconButton>
+                              </button>
                             </Tooltip>
                           )}
 
                           {factura.estado === "Pendiente" && (
                             <Tooltip title="Marcar como pagada">
-                              <IconButton
-                                size="small"
-                                color="success"
-                                onClick={() => handleCambiarEstado(factura.id, "Pagada")}
+                              <button
+                                className="facturas-action-button paid"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCambiarEstado(factura.id, "Pagada")
+                                }}
                               >
-                                <Edit fontSize="small" />
-                              </IconButton>
+                                <CheckCircle fontSize="small" />
+                              </button>
                             </Tooltip>
                           )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </tbody>
+              </table>
+            </div>
           )}
 
           {/* Botón para volver */}
           <Box sx={{ mt: 3 }}>
-            <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate("/dashboard")}>
+            <Button
+              variant="outlined"
+              startIcon={<ArrowBack />}
+              onClick={() => navigate("/dashboard")}
+              className="facturas-back-button"
+            >
               Volver al Dashboard
             </Button>
           </Box>
         </Paper>
 
         {/* Diálogo de confirmación para anular factura */}
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          TransitionComponent={Zoom}
+          className="dialog-animation"
+        >
           <DialogTitle>Confirmar anulación</DialogTitle>
           <DialogContent>
             <DialogContentText>

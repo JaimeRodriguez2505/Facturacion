@@ -7,23 +7,22 @@ import {
   IconButton,
   Typography,
   Box,
-  Badge,
   Menu,
   MenuItem,
   Tooltip,
   useTheme,
   Button,
 } from "@mui/material"
-import { 
-  Menu as MenuIcon, 
-  Notifications as NotificationsIcon, 
+import {
+  Menu as MenuIcon,
   AccountCircle,
   Business as BusinessIcon,
-  Add as AddIcon
+  Add as AddIcon,
 } from "@mui/icons-material"
 import { useAuth } from "../../contexts/AuthContext"
 import { useCompany } from "../../contexts/CompanyContext"
 import { useNavigate } from "react-router-dom"
+import "../../css/header.css"
 
 interface HeaderProps {
   open: boolean
@@ -96,14 +95,14 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
               onClick={handleCompanyMenu}
               startIcon={<BusinessIcon />}
               endIcon={<MenuIcon />}
-              sx={{ 
-                textTransform: 'none',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+              sx={{
+                textTransform: "none",
+                backgroundColor: "rgba(255,255,255,0.1)",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.2)",
                 },
                 px: 2,
-                borderRadius: 2
+                borderRadius: 2,
               }}
             >
               {selectedCompany ? selectedCompany.razon_social : "Seleccionar Empresa"}
@@ -113,18 +112,18 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
               open={Boolean(companyMenuAnchorEl)}
               onClose={handleCompanyMenuClose}
               anchorOrigin={{
-                vertical: 'bottom',
-                horizontal: 'right',
+                vertical: "bottom",
+                horizontal: "right",
               }}
               transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
+                vertical: "top",
+                horizontal: "right",
               }}
             >
               {companies.length > 0 ? (
                 companies.map((company) => (
-                  <MenuItem 
-                    key={company.ruc} 
+                  <MenuItem
+                    key={company.ruc}
                     onClick={() => handleCompanySelect(company)}
                     selected={selectedCompany?.ruc === company.ruc}
                   >
@@ -141,14 +140,6 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
               </MenuItem>
             </Menu>
           </Box>
-
-          <Tooltip title="Notificaciones">
-            <IconButton color="inherit" size="large">
-              <Badge badgeContent={4} color="error">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Tooltip>
 
           <Box sx={{ ml: 2 }}>
             <Tooltip title="Mi cuenta">
@@ -185,23 +176,7 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
                 }}
               >
                 Mi Perfil
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleClose()
-                  navigate("/companies")
-                }}
-              >
-                Mis Empresas
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleClose()
-                  navigate("/configuracion")
-                }}
-              >
-                Configuración
-              </MenuItem>
+              </MenuItem>             
               <MenuItem onClick={handleLogout}>Cerrar Sesión</MenuItem>
             </Menu>
           </Box>
@@ -212,3 +187,4 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
 }
 
 export default Header
+

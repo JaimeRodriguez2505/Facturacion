@@ -1,0 +1,643 @@
+/* Estilos específicos para la página de Lista de Facturas */
+
+.facturas-container {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .facturas-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    animation: slideInFromLeft 0.6s ease-out;
+  }
+  
+  .facturas-header-icon {
+    font-size: 2.5rem !important;
+    margin-right: 1rem;
+    color: var(--primary-color);
+    animation: pulse 2s infinite ease-in-out;
+  }
+  
+  .facturas-title {
+    font-weight: 600;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .facturas-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    animation: slideInFromRight 0.7s ease-out;
+  }
+  
+  .facturas-search {
+    flex-grow: 1;
+    min-width: 200px;
+    transition: all 0.3s ease;
+  }
+  
+  .facturas-search:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .facturas-filter-select {
+    min-width: 150px;
+    transition: all 0.3s ease;
+  }
+  
+  .facturas-filter-select:focus-within {
+    transform: translateY(-2px);
+  }
+  
+  .facturas-table-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    animation: fadeIn 0.8s ease-in-out;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .facturas-table-container:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+  }
+  
+  .facturas-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .facturas-table-head {
+    background: linear-gradient(135deg, var(--table-header-bg-start), var(--table-header-bg-end));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .facturas-table-head th {
+    font-weight: 600;
+    color: var(--table-header-text);
+    padding: 1.2rem 1rem;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    text-align: left;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  
+  .facturas-table-head th::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    transform-origin: left;
+  }
+  
+  .facturas-table-head th:hover::after {
+    transform: scaleX(1);
+  }
+  
+  .facturas-table-row {
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .facturas-table-row:nth-child(odd) {
+    background-color: var(--table-row-odd);
+  }
+  
+  .facturas-table-row:hover {
+    background-color: var(--table-row-hover);
+    transform: scale(1.01);
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .facturas-table-cell {
+    padding: 1rem;
+    border-bottom: 1px solid var(--table-border);
+    transition: all 0.3s ease;
+  }
+  
+  .facturas-table-row:last-child .facturas-table-cell {
+    border-bottom: none;
+  }
+  
+  .facturas-cliente-info {
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+  }
+  
+  .facturas-table-row:hover .facturas-cliente-info {
+    transform: translateY(-2px);
+  }
+  
+  .facturas-cliente-nombre {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
+  
+  .facturas-cliente-doc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    transition: opacity 0.3s ease;
+  }
+  
+  .facturas-table-row:hover .facturas-cliente-doc {
+    opacity: 1;
+  }
+  
+  .facturas-monto {
+    font-weight: 600;
+    text-align: right;
+    color: var(--monto-color);
+    transition: all 0.3s ease;
+  }
+  
+  .facturas-table-row:hover .facturas-monto {
+    transform: scale(1.1);
+    color: var(--monto-hover-color);
+  }
+  
+  .facturas-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  
+  .facturas-action-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background-color: var(--action-button-bg);
+    color: var(--action-button-color);
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .facturas-action-button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .facturas-action-button:hover {
+    transform: translateY(-5px) scale(1.1);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .facturas-action-button:hover::before {
+    opacity: 1;
+  }
+  
+  .facturas-action-button:active {
+    transform: translateY(0) scale(0.95);
+  }
+  
+  .facturas-action-button.pdf {
+    background-color: var(--pdf-button-bg);
+    color: var(--pdf-button-color);
+  }
+  
+  .facturas-action-button.delete {
+    background-color: var(--delete-button-bg);
+    color: var(--delete-button-color);
+  }
+  
+  .facturas-action-button.paid {
+    background-color: var(--paid-button-bg);
+    color: var(--paid-button-color);
+  }
+  
+  .facturas-action-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .facturas-action-button svg {
+    transition: transform 0.3s ease;
+  }
+  
+  .facturas-action-button:hover svg {
+    transform: rotate(360deg);
+  }
+  
+  .facturas-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .facturas-chip::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  .facturas-table-row:hover .facturas-chip::before {
+    transform: translateX(100%);
+  }
+  
+  .facturas-chip.pagada {
+    background: linear-gradient(135deg, var(--chip-pagada-bg-start), var(--chip-pagada-bg-end));
+    color: var(--chip-pagada-text);
+  }
+  
+  .facturas-chip.pendiente {
+    background: linear-gradient(135deg, var(--chip-pendiente-bg-start), var(--chip-pendiente-bg-end));
+    color: var(--chip-pendiente-text);
+  }
+  
+  .facturas-chip.vencida {
+    background: linear-gradient(135deg, var(--chip-vencida-bg-start), var(--chip-vencida-bg-end));
+    color: var(--chip-vencida-text);
+  }
+  
+  .facturas-chip.anulada {
+    background: linear-gradient(135deg, var(--chip-anulada-bg-start), var(--chip-anulada-bg-end));
+    color: var(--chip-anulada-text);
+  }
+  
+  .facturas-chip-icon {
+    margin-right: 0.35rem;
+    font-size: 1rem !important;
+    animation: pulse 2s infinite ease-in-out;
+  }
+  
+  .facturas-empty {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text-secondary);
+    animation: fadeIn 0.5s ease-in-out;
+    background: var(--empty-bg);
+    border-radius: 12px;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05);
+  }
+  
+  .facturas-empty-icon {
+    font-size: 4rem !important;
+    color: var(--empty-icon-color);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+  
+  .facturas-loading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .facturas-loading .MuiCircularProgress-root {
+    animation: pulse 1.5s infinite ease-in-out;
+  }
+  
+  .facturas-back-button {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .facturas-back-button::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background-color: var(--primary-color);
+    opacity: 0.1;
+    transition: height 0.3s ease;
+    z-index: -1;
+  }
+  
+  .facturas-back-button:hover::after {
+    height: 100%;
+  }
+  
+  .facturas-back-button:hover {
+    transform: translateX(-5px);
+  }
+  
+  /* Animaciones */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  /* Variables CSS para temas claro y oscuro */
+  :root {
+    --primary-color: #1976d2;
+    --secondary-color: #42a5f5;
+    --table-header-bg-start: #f5f5f5;
+    --table-header-bg-end: #e0e0e0;
+    --table-header-text: #333;
+    --table-border: #e0e0e0;
+    --table-row-odd: #fafafa;
+    --table-row-hover: rgba(25, 118, 210, 0.08);
+    --text-secondary: #666;
+    --monto-color: #333;
+    --monto-hover-color: #1976d2;
+  
+    --action-button-bg: #f5f5f5;
+    --action-button-color: #333;
+  
+    --pdf-button-bg: #e8f5e9;
+    --pdf-button-color: #2e7d32;
+  
+    --delete-button-bg: #ffebee;
+    --delete-button-color: #d32f2f;
+  
+    --paid-button-bg: #e8f5e9;
+    --paid-button-color: #2e7d32;
+  
+    --chip-pagada-bg-start: #43a047;
+    --chip-pagada-bg-end: #2e7d32;
+    --chip-pagada-text: #fff;
+  
+    --chip-pendiente-bg-start: #ff9800;
+    --chip-pendiente-bg-end: #f57c00;
+    --chip-pendiente-text: #fff;
+  
+    --chip-vencida-bg-start: #e53935;
+    --chip-vencida-bg-end: #c62828;
+    --chip-vencida-text: #fff;
+  
+    --chip-anulada-bg-start: #757575;
+    --chip-anulada-bg-end: #616161;
+    --chip-anulada-text: #fff;
+  
+    --empty-bg: #f9f9f9;
+    --empty-icon-color: #bdbdbd;
+  }
+  
+  /* Variables para tema oscuro */
+  .dark {
+    --primary-color: #90caf9;
+    --secondary-color: #64b5f6;
+    --table-header-bg-start: #333;
+    --table-header-bg-end: #424242;
+    --table-header-text: #fff;
+    --table-border: #444;
+    --table-row-odd: #2d2d2d;
+    --table-row-hover: rgba(144, 202, 249, 0.15);
+    --text-secondary: #aaa;
+    --monto-color: #eee;
+    --monto-hover-color: #90caf9;
+  
+    --action-button-bg: #333;
+    --action-button-color: #fff;
+  
+    --pdf-button-bg: #1b5e20;
+    --pdf-button-color: #e8f5e9;
+  
+    --delete-button-bg: #b71c1c;
+    --delete-button-color: #ffebee;
+  
+    --paid-button-bg: #1b5e20;
+    --paid-button-color: #e8f5e9;
+  
+    --chip-pagada-bg-start: #2e7d32;
+    --chip-pagada-bg-end: #1b5e20;
+    --chip-pagada-text: #e8f5e9;
+  
+    --chip-pendiente-bg-start: #f57c00;
+    --chip-pendiente-bg-end: #e65100;
+    --chip-pendiente-text: #fff8e1;
+  
+    --chip-vencida-bg-start: #c62828;
+    --chip-vencida-bg-end: #b71c1c;
+    --chip-vencida-text: #ffebee;
+  
+    --chip-anulada-bg-start: #616161;
+    --chip-anulada-bg-end: #424242;
+    --chip-anulada-text: #f5f5f5;
+  
+    --empty-bg: #2d2d2d;
+    --empty-icon-color: #616161;
+  }
+  
+  /* Estilos responsivos */
+  @media (max-width: 768px) {
+    .facturas-filters {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .facturas-table-container {
+      overflow-x: auto;
+    }
+  
+    .facturas-actions {
+      flex-wrap: wrap;
+    }
+  
+    .facturas-cliente-nombre {
+      max-width: 150px;
+    }
+  
+    .facturas-action-button {
+      width: 36px;
+      height: 36px;
+    }
+  
+    .facturas-table-head th {
+      padding: 0.8rem 0.5rem;
+      font-size: 0.75rem;
+    }
+  
+    .facturas-table-cell {
+      padding: 0.8rem 0.5rem;
+    }
+  }
+  
+  /* Animación para el botón de nueva factura */
+  .btn-nueva-factura {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    z-index: 1;
+  }
+  
+  .btn-nueva-factura::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    transition: left 0.7s ease;
+    z-index: -1;
+  }
+  
+  .btn-nueva-factura:hover::before {
+    left: 100%;
+  }
+  
+  .btn-nueva-factura:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Animación para el botón de actualizar */
+  .btn-actualizar {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-actualizar:hover {
+    transform: translateY(-3px);
+  }
+  
+  .btn-actualizar:active {
+    transform: translateY(0) scale(0.95);
+  }
+  
+  .btn-actualizar .refresh-icon {
+    transition: transform 0.5s ease;
+  }
+  
+  .btn-actualizar:hover .refresh-icon {
+    transform: rotate(180deg);
+  }
+  
+  /* Animación para el diálogo de confirmación */
+  .dialog-animation-enter {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  
+  .dialog-animation-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .dialog-animation-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .dialog-animation-exit-active {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  /* Animación para los mensajes de alerta */
+  .alert-animation {
+    animation: slideInFromTop 0.5s ease-out;
+  }
+  
+  @keyframes slideInFromTop {
+    from {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  

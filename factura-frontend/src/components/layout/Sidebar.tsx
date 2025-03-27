@@ -32,6 +32,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext"
 import { useCompany } from "../../contexts/CompanyContext"
 import { useState } from "react"
+import "../../css/sidebar.css"
 
 const drawerWidth = 240
 

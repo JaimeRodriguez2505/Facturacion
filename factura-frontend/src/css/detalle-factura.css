@@ -1,0 +1,567 @@
+/* Estilos específicos para la página de Detalle de Factura */
+
+.detalle-factura-container {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .detalle-factura-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    animation: slideInFromLeft 0.6s ease-out;
+  }
+  
+  .detalle-factura-header-icon {
+    font-size: 2.5rem !important;
+    margin-right: 1rem;
+    color: var(--primary-color);
+    animation: pulse 2s infinite ease-in-out;
+  }
+  
+  .detalle-factura-title {
+    font-weight: 600;
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .detalle-factura-section {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    animation: fadeIn 0.8s ease-in-out;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+  
+  .detalle-factura-section:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+  }
+  
+  .detalle-factura-section-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+  }
+  
+  .detalle-factura-section-title-icon {
+    margin-right: 0.5rem;
+    color: var(--primary-color);
+  }
+  
+  .detalle-factura-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+  
+  .detalle-factura-info-item {
+    margin-bottom: 0.5rem;
+  }
+  
+  .detalle-factura-info-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+  }
+  
+  .detalle-factura-info-value {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .detalle-factura-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.5;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .detalle-factura-chip::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.1));
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+  }
+  
+  .detalle-factura-section:hover .detalle-factura-chip::before {
+    transform: translateX(100%);
+  }
+  
+  .detalle-factura-chip.pagada {
+    background: linear-gradient(135deg, var(--chip-pagada-bg-start), var(--chip-pagada-bg-end));
+    color: var(--chip-pagada-text);
+  }
+  
+  .detalle-factura-chip.pendiente {
+    background: linear-gradient(135deg, var(--chip-pendiente-bg-start), var(--chip-pendiente-bg-end));
+    color: var(--chip-pendiente-text);
+  }
+  
+  .detalle-factura-chip.vencida {
+    background: linear-gradient(135deg, var(--chip-vencida-bg-start), var(--chip-vencida-bg-end));
+    color: var(--chip-vencida-text);
+  }
+  
+  .detalle-factura-chip.anulada {
+    background: linear-gradient(135deg, var(--chip-anulada-bg-start), var(--chip-anulada-bg-end));
+    color: var(--chip-anulada-text);
+  }
+  
+  .detalle-factura-chip-icon {
+    margin-right: 0.35rem;
+    font-size: 1rem !important;
+    animation: pulse 2s infinite ease-in-out;
+  }
+  
+  .detalle-factura-table-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.12);
+    transition: all 0.3s ease;
+    animation: fadeIn 1s ease-in-out;
+    margin-bottom: 1.75rem;
+    border: 2px solid var(--border-color);
+  }
+  
+  .detalle-factura-table-container:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+  }
+  
+  .detalle-factura-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .detalle-factura-table-head {
+    background: linear-gradient(135deg, var(--table-header-bg-start), var(--table-header-bg-end));
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .detalle-factura-table-head th {
+    font-weight: 700;
+    color: var(--table-header-text);
+    padding: 1.25rem 1rem;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.7px;
+    text-align: left;
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-table-head th::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    transform-origin: left;
+  }
+  
+  .detalle-factura-table-head th:hover::after {
+    transform: scaleX(1);
+  }
+  
+  .detalle-factura-table-row {
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .detalle-factura-table-row:nth-child(odd) {
+    background-color: var(--table-row-odd);
+  }
+  
+  .detalle-factura-table-row:hover {
+    background-color: var(--table-row-hover);
+    transform: scale(1.01);
+    z-index: 5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .detalle-factura-table-cell {
+    padding: 1rem;
+    border-bottom: 1px solid var(--table-border);
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+  
+  .detalle-factura-table-row:last-child .detalle-factura-table-cell {
+    border-bottom: none;
+  }
+  
+  .detalle-factura-totals-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    animation: fadeIn 1.1s ease-in-out;
+  }
+  
+  .detalle-factura-total-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-total-row:hover {
+    transform: translateX(-5px);
+  }
+  
+  .detalle-factura-total-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-right: 1rem;
+  }
+  
+  .detalle-factura-total-value {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .detalle-factura-grand-total {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 2px solid var(--border-color);
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-grand-total:hover {
+    transform: scale(1.05);
+  }
+  
+  .detalle-factura-sunat-response {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    animation: fadeIn 0.9s ease-in-out;
+    margin-bottom: 1.5rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    padding: 1.5rem;
+  }
+  
+  .detalle-factura-sunat-response:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+    transform: translateY(-5px);
+  }
+  
+  .detalle-factura-sunat-title {
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    color: var(--text-primary);
+  }
+  
+  .detalle-factura-sunat-chip {
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-sunat-chip:hover {
+    transform: scale(1.05);
+  }
+  
+  .detalle-factura-sunat-error {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-sunat-error:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .detalle-factura-sunat-details {
+    margin-top: 1rem;
+  }
+  
+  .detalle-factura-sunat-detail-item {
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-sunat-detail-item:hover {
+    transform: translateX(5px);
+  }
+  
+  .detalle-factura-sunat-detail-label {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .detalle-factura-sunat-detail-value {
+    color: var(--text-secondary);
+  }
+  
+  .detalle-factura-sunat-notes {
+    margin-top: 1rem;
+    padding-left: 1.5rem;
+  }
+  
+  .detalle-factura-sunat-note {
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    transition: all 0.3s ease;
+  }
+  
+  .detalle-factura-sunat-note:hover {
+    color: var(--text-primary);
+    transform: translateX(5px);
+  }
+  
+  .detalle-factura-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 2rem;
+    animation: fadeIn 1.2s ease-in-out;
+  }
+  
+  .detalle-factura-back-button {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .detalle-factura-back-button::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0;
+    background-color: var(--primary-color);
+    opacity: 0.1;
+    transition: height 0.3s ease;
+    z-index: -1;
+  }
+  
+  .detalle-factura-back-button:hover::after {
+    height: 100%;
+  }
+  
+  .detalle-factura-back-button:hover {
+    transform: translateX(-5px);
+  }
+  
+  .detalle-factura-action-button {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  
+  .detalle-factura-action-button::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+    transition: left 0.7s ease;
+    z-index: -1;
+  }
+  
+  .detalle-factura-action-button:hover::before {
+    left: 100%;
+  }
+  
+  .detalle-factura-action-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+  
+  .detalle-factura-loading {
+    display: flex;
+    justify-content: center;
+    padding: 3rem;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .detalle-factura-loading .MuiCircularProgress-root {
+    animation: pulse 1.5s infinite ease-in-out;
+  }
+  
+  .detalle-factura-error {
+    animation: fadeIn 0.5s ease-in-out;
+    margin-bottom: 1.5rem;
+  }
+  
+  .detalle-factura-success {
+    animation: fadeIn 0.5s ease-in-out;
+    margin-bottom: 1.5rem;
+  }
+  
+  /* Animaciones */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(30px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  
+  /* Variables CSS para temas claro y oscuro */
+  :root {
+    --primary-color: #1976d2;
+    --secondary-color: #42a5f5;
+    --card-bg: #ffffff;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --border-color: #e0e0e0;
+    
+    --table-header-bg-start: #f5f5f5;
+    --table-header-bg-end: #e0e0e0;
+    --table-header-text: #333;
+    --table-border: #e0e0e0;
+    --table-row-odd: #fafafa;
+    --table-row-hover: rgba(25, 118, 210, 0.08);
+    
+    --chip-pagada-bg-start: #43a047;
+    --chip-pagada-bg-end: #2e7d32;
+    --chip-pagada-text: #fff;
+  
+    --chip-pendiente-bg-start: #ff9800;
+    --chip-pendiente-bg-end: #f57c00;
+    --chip-pendiente-text: #fff;
+  
+    --chip-vencida-bg-start: #e53935;
+    --chip-vencida-bg-end: #c62828;
+    --chip-vencida-text: #fff;
+  
+    --chip-anulada-bg-start: #757575;
+    --chip-anulada-bg-end: #616161;
+    --chip-anulada-text: #fff;
+  }
+  
+  /* Variables para tema oscuro */
+  .dark {
+    --primary-color: #90caf9;
+    --secondary-color: #64b5f6;
+    --card-bg: #1e1e1e;
+    --text-primary: #f5f5f5;
+    --text-secondary: #aaa;
+    --border-color: #444;
+    
+    --table-header-bg-start: #333;
+    --table-header-bg-end: #424242;
+    --table-header-text: #fff;
+    --table-border: #444;
+    --table-row-odd: #2d2d2d;
+    --table-row-hover: rgba(144, 202, 249, 0.15);
+    
+    --chip-pagada-bg-start: #2e7d32;
+    --chip-pagada-bg-end: #1b5e20;
+    --chip-pagada-text: #e8f5e9;
+  
+    --chip-pendiente-bg-start: #f57c00;
+    --chip-pendiente-bg-end: #e65100;
+    --chip-pendiente-text: #fff8e1;
+  
+    --chip-vencida-bg-start: #c62828;
+    --chip-vencida-bg-end: #b71c1c;
+    --chip-vencida-text: #ffebee;
+  
+    --chip-anulada-bg-start: #616161;
+    --chip-anulada-bg-end: #424242;
+    --chip-anulada-text: #f5f5f5;
+  }
+  
+  /* Estilos responsivos */
+  @media (max-width: 768px) {
+    .detalle-factura-info-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .detalle-factura-actions {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .detalle-factura-table-container {
+      overflow-x: auto;
+    }
+    
+    .detalle-factura-table-head th {
+      padding: 0.8rem 0.5rem;
+      font-size: 0.75rem;
+    }
+    
+    .detalle-factura-table-cell {
+      padding: 0.8rem 0.5rem;
+    }
+  }
+  

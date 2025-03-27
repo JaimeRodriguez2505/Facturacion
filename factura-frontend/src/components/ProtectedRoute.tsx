@@ -17,32 +17,38 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requireCompan
   const { companies, loading: companyLoading } = useCompany()
   const location = useLocation()
 
-  console.log("ProtectedRoute - User:", user)
-  console.log("ProtectedRoute - Loading:", loading)
-  console.log("ProtectedRoute - Companies:", companies)
-  console.log("ProtectedRoute - Company Loading:", companyLoading)
+  // Eliminamos los logs excesivos que causan ruido en la consola
 
   if (loading || companyLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+        width="100%"
+        position="fixed"
+        top={0}
+        left={0}
+        zIndex={9999}
+        bgcolor="rgba(255, 255, 255, 0.7)"
+      >
+        <CircularProgress size={60} />
       </Box>
     )
   }
 
   if (!user) {
-    console.log("ProtectedRoute - No user, redirecting to login")
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   // Si se requiere una empresa y no hay empresas registradas, redirigir a la página de registro de empresa
   if (requireCompany && companies.length === 0) {
-    console.log("ProtectedRoute - No companies, redirecting to company registration")
     return <Navigate to="/companies/new" state={{ from: location }} replace />
   }
 
-  console.log("ProtectedRoute - User authenticated, rendering children")
   return <>{children}</>
 }
 
 export default ProtectedRoute
+

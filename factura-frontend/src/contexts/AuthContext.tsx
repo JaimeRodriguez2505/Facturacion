@@ -47,29 +47,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log("Usuario almacenado existe:", !!storedUser)
 
         if (storedUser && token) {
-          const parsedUser = JSON.parse(storedUser);
-          console.log("Usuario almacenado:", parsedUser);
+          const parsedUser = JSON.parse(storedUser)
+          console.log("Usuario almacenado:", parsedUser)
           setUser(parsedUser)
 
           // Verificar que el token sigue siendo válido obteniendo el usuario actual
-          try {
-            const userData = await authService.getCurrentUser()
-            console.log("Datos del usuario actual desde API:", userData)
+          // pero solo si no tenemos datos completos del usuario
+          if (!parsedUser.id || !parsedUser.email) {
+            try {
+              const userData = await authService.getCurrentUser()
+              console.log("Datos del usuario actual desde API:", userData)
 
-            // Solo actualizar si tenemos datos válidos
-            if (userData && userData.id) {
-              const completeUser = {
-                id: userData.id || parsedUser.id,
-                email: userData.email || parsedUser.email,
+              // Solo actualizar si tenemos datos válidos
+              if (userData && userData.id) {
+                const completeUser = {
+                  id: userData.id || parsedUser.id,
+                  email: userData.email || parsedUser.email,
+                }
+
+                console.log("Usuario actualizado con datos de API:", completeUser)
+                setUser(completeUser)
+                localStorage.setItem("user", JSON.stringify(completeUser))
               }
-              
-              console.log("Usuario actualizado con datos de API:", completeUser);
-              setUser(completeUser)
-              localStorage.setItem("user", JSON.stringify(completeUser))
+            } catch (error) {
+              console.error("Error al obtener el usuario actual:", error)
+              // No eliminamos los datos almacenados si hay un error, seguimos usando lo que tenemos
             }
-          } catch (error) {
-            console.error("Error al obtener el usuario actual:", error)
-            // No eliminamos los datos almacenados si hay un error, seguimos usando lo que tenemos
           }
         } else {
           // No hay credenciales almacenadas
@@ -114,19 +117,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userData.email || response.user?.email || email,
         }
 
-        console.log("Usuario final después de login:", completeUser);
+        console.log("Usuario final después de login:", completeUser)
         setUser(completeUser)
         localStorage.setItem("user", JSON.stringify(completeUser))
       } catch (userError) {
         console.error("Error al obtener datos completos del usuario:", userError)
-        
+
         // Si no podemos obtener datos de la API, usar los datos de la respuesta de login
         const basicUser = {
           id: response.user?.id || 1,
           email: response.user?.email || email,
         }
 
-        console.log("Usuario básico (sin datos de API):", basicUser);
+        console.log("Usuario básico (sin datos de API):", basicUser)
         setUser(basicUser)
         localStorage.setItem("user", JSON.stringify(basicUser))
       }
@@ -146,8 +149,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true)
       setError(null)
       const response = await authService.register({ name, email, password, password_confirmation })
-      console.log("Respuesta completa de registro:", response);
-      
+      console.log("Respuesta completa de registro:", response)
+
       localStorage.setItem("token", response.token)
 
       // Asegurarse de que tenemos un objeto de usuario básico
@@ -156,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: response.user?.email || email,
       }
 
-      console.log("Usuario creado en registro:", completeUser);
+      console.log("Usuario creado en registro:", completeUser)
       setUser(completeUser)
       localStorage.setItem("user", JSON.stringify(completeUser))
     } catch (error: any) {
@@ -189,3 +192,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ user, loading, error, login, register, logout }}>{children}</AuthContext.Provider>
   )
 }
+

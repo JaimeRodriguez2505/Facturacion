@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Paper,
@@ -29,11 +30,17 @@ import {
   Warning,
   Error,
   Print,
+  Person,
+  Description,
+  CloudDone,
 } from "@mui/icons-material"
 import { useNavigate, useParams } from "react-router-dom"
 import { facturaService } from "../../service/facturaService"
 import { useTheme } from "../../contexts/ThemeContext"
 import MainLayout from "../../components/layout/MainLayout"
+
+// Importar estilos específicos para esta página
+import "../../css/detalle-factura.css"
 
 const DetalleFactura: React.FC = () => {
   const navigate = useNavigate()
@@ -69,13 +76,19 @@ const DetalleFactura: React.FC = () => {
   }
 
   const handleGenerarPDF = async () => {
-    if (!id) return
+    if (!id) {
+      setError("ID de factura no válido");
+      return;
+    }
     
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
+
+      console.log(`Generando PDF para factura ID: ${id}`);
+
       const pdfBlob = await facturaService.generarPDFdeFacturaExistente(id)
-      
+
       // Descargar en navegador
       const pdfUrl = URL.createObjectURL(pdfBlob)
       const link = document.createElement("a")
@@ -83,19 +96,22 @@ const DetalleFactura: React.FC = () => {
       link.download = `Factura-${factura.serie}-${factura.correlativo}.pdf`
       link.click()
       URL.revokeObjectURL(pdfUrl)
-      
+
       setSuccess("PDF generado correctamente")
     } catch (err: any) {
       console.error("Error al generar PDF:", err)
       setError(err.message || "Error al generar PDF")
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const handlePrintInvoice = () => {
-    if (!factura) return
-    
+    if (!factura) {
+      setError("No hay datos de factura para imprimir");
+      return;
+    }
+
     // Crear una nueva ventana para la impresión
     const printWindow = window.open("", "_blank")
     if (!printWindow) {
@@ -272,14 +288,18 @@ const DetalleFactura: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              ${factura.detalles.map((detalle: any) => `
+              ${factura.detalles
+                .map(
+                  (detalle: any) => `
                 <tr>
                   <td>${detalle.cantidad}</td>
                   <td>${detalle.descripcion}</td>
-                  <td class="text-right">S/ ${parseFloat(detalle.precio_unitario).toFixed(2)}</td>
-                  <td class="text-right">S/ ${parseFloat(detalle.subtotal).toFixed(2)}</td>
+                  <td class="text-right">S/ ${Number.parseFloat(detalle.precio_unitario).toFixed(2)}</td>
+                  <td class="text-right">S/ ${Number.parseFloat(detalle.subtotal).toFixed(2)}</td>
                 </tr>
-              `).join("")}
+              `,
+                )
+                .join("")}
             </tbody>
           </table>
 
@@ -287,21 +307,21 @@ const DetalleFactura: React.FC = () => {
             <table class="totals-table">
               <tr>
                 <td>Op. Gravadas:</td>
-                <td class="text-right">S/ ${parseFloat(factura.subtotal).toFixed(2)}</td>
+                <td class="text-right">S/ ${Number.parseFloat(factura.subtotal).toFixed(2)}</td>
               </tr>
               <tr>
                 <td>I.G.V. (18%):</td>
-                <td class="text-right">S/ ${parseFloat(factura.igv).toFixed(2)}</td>
+                <td class="text-right">S/ ${Number.parseFloat(factura.igv).toFixed(2)}</td>
               </tr>
               <tr class="total-row">
                 <td>TOTAL A PAGAR:</td>
-                <td class="text-right">S/ ${parseFloat(factura.total).toFixed(2)}</td>
+                <td class="text-right">S/ ${Number.parseFloat(factura.total).toFixed(2)}</td>
               </tr>
             </table>
           </div>
 
           <div class="amount-in-words">
-            SON: ${convertirNumeroALetras(parseFloat(factura.total))}
+            SON: ${convertirNumeroALetras(Number.parseFloat(factura.total))}
           </div>
 
           <div class="qr-code">
@@ -338,7 +358,8 @@ const DetalleFactura: React.FC = () => {
       const parteDecimal = Math.round((numero - parteEntera) * 100)
 
       if (parteEntera < 10) return `${unidades[parteEntera]} CON ${parteDecimal}/100 SOLES`
-      if (parteEntera < 100) return `${decenas[Math.floor(parteEntera / 10)]} Y ${unidades[parteEntera % 10]} CON ${parteDecimal}/100 SOLES`
+      if (parteEntera < 100)
+        return `${decenas[Math.floor(parteEntera / 10)]} Y ${unidades[parteEntera % 10]} CON ${parteDecimal}/100 SOLES`
 
       return `${Math.floor(parteEntera)} CON ${parteDecimal}/100 SOLES`
     }
@@ -354,7 +375,9 @@ const DetalleFactura: React.FC = () => {
   }
 
   // Obtener el color del chip según el estado
-  const getChipColor = (estado: string) => {
+  const getChipColor = (estado: string | undefined) => {
+    if (!estado) return "default";
+    
     switch (estado) {
       case "Pagada":
         return "success"
@@ -370,33 +393,26 @@ const DetalleFactura: React.FC = () => {
   }
 
   // Obtener el icono según el estado
-  const getStatusIcon = (estado: string) => {
+  const getStatusIcon = (estado: string | undefined) => {
+    if (!estado) return null;
+    
     switch (estado) {
       case "Pagada":
-        return <CheckCircle color="success" />;
+        return <CheckCircle className="detalle-factura-chip-icon" />
       case "Pendiente":
-        return <Warning color="warning" />;
+        return <Warning className="detalle-factura-chip-icon" />
       case "Vencida":
-        return <Error color="error" />;
+        return <Error className="detalle-factura-chip-icon" />
       case "Anulada":
-        return <Error />;
+        return <Error className="detalle-factura-chip-icon" />
       default:
-        return undefined; // Cambia null por undefined
+        return null
     }
   }
-  
-  // En tu componente Chip:
-  <Chip
-    label={factura.estado}
-    color={getChipColor(factura.estado)}
-    size="small"
-    icon={getStatusIcon(factura.estado)} // Ahora será undefined en lugar de null
-    sx={{ ml: 2 }}
-  />
 
   return (
     <MainLayout>
-      <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+      <Box className="detalle-factura-container" sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
         {/* Botón para alternar modo oscuro */}
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
           <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -416,194 +432,243 @@ const DetalleFactura: React.FC = () => {
         </Box>
 
         <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-            <Receipt sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-            <Typography variant="h4">Detalle de Factura</Typography>
+          <Box className="detalle-factura-header">
+            <Receipt className="detalle-factura-header-icon" />
+            <Typography variant="h4" className="detalle-factura-title">
+              Detalle de Factura
+            </Typography>
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity="error" className="detalle-factura-error" sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
-          
+
           {success && (
-            <Alert severity="success" sx={{ mb: 3 }}>
+            <Alert severity="success" className="detalle-factura-success" sx={{ mb: 3 }}>
               {success}
             </Alert>
           )}
 
           {loading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
-              <CircularProgress />
+            <Box className="detalle-factura-loading">
+              <CircularProgress size={60} />
             </Box>
           ) : !factura ? (
             <Alert severity="error">No se encontró la factura solicitada.</Alert>
           ) : (
             <>
               {/* Información de la factura */}
-              <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                      <Typography variant="h6" gutterBottom>
-                        Información de la Factura
-                      </Typography>
-                      <Chip
-                        label={factura.estado}
-                        color={getChipColor(factura.estado)}
-                        size="small"
-                        icon={getStatusIcon(factura.estado)}
-                        sx={{ ml: 2 }}
-                      />
-                    </Box>
-                    <Typography variant="body1">
-                      <strong>Serie-Correlativo:</strong> {factura.serie}-{factura.correlativo}
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>Fecha de Emisión:</strong> {new Date(factura.fecha_emision).toLocaleDateString()}
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>
-                      Datos del Cliente
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>
-                        {factura.tipo_doc_cliente === "6"
-                          ? "RUC"
-                          : factura.tipo_doc_cliente === "1"
-                            ? "DNI"
-                            : "Doc. Identidad"}
-                        :
-                      </strong>{" "}
-                      {factura.num_doc_cliente}
-                    </Typography>
-                    <Typography variant="body1">
-                      <strong>Nombre/Razón Social:</strong> {factura.nombre_cliente}
-                    </Typography>
-                    {factura.direccion_cliente && (
-                      <Typography variant="body1">
-                        <strong>Dirección:</strong> {factura.direccion_cliente}
-                      </Typography>
-                    )}
-                  </Grid>
-                </Grid>
-              </Paper>
+              {factura && (
+                <div className="detalle-factura-section">
+                  <Box sx={{ p: 3 }}>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                          <Typography variant="h6" className="detalle-factura-section-title">
+                            <Receipt className="detalle-factura-section-title-icon" />
+                            Información de la Factura
+                          </Typography>
+                          <div className={`detalle-factura-chip ${factura.estado.toLowerCase()}`}>
+                            {getStatusIcon(factura.estado)}
+                            {factura.estado}
+                          </div>
+                        </Box>
+                        <div className="detalle-factura-info-grid">
+                          <div className="detalle-factura-info-item">
+                            <Typography className="detalle-factura-info-label">Serie-Correlativo:</Typography>
+                            <Typography className="detalle-factura-info-value">
+                              {factura.serie}-{factura.correlativo}
+                            </Typography>
+                          </div>
+                          <div className="detalle-factura-info-item">
+                            <Typography className="detalle-factura-info-label">Fecha de Emisión:</Typography>
+                            <Typography className="detalle-factura-info-value">
+                              {new Date(factura.fecha_emision).toLocaleDateString()}
+                            </Typography>
+                          </div>
+                        </div>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Typography variant="h6" className="detalle-factura-section-title">
+                          <Person className="detalle-factura-section-title-icon" />
+                          Datos del Cliente
+                        </Typography>
+                        <div className="detalle-factura-info-grid">
+                          <div className="detalle-factura-info-item">
+                            <Typography className="detalle-factura-info-label">
+                              {factura.tipo_doc_cliente === "6"
+                                ? "RUC"
+                                : factura.tipo_doc_cliente === "1"
+                                  ? "DNI"
+                                  : "Doc. Identidad"}:
+                            </Typography>
+                            <Typography className="detalle-factura-info-value">{factura.num_doc_cliente}</Typography>
+                          </div>
+                          <div className="detalle-factura-info-item">
+                            <Typography className="detalle-factura-info-label">Nombre/Razón Social:</Typography>
+                            <Typography className="detalle-factura-info-value">{factura.nombre_cliente}</Typography>
+                          </div>
+                          {factura.direccion_cliente && (
+                            <div className="detalle-factura-info-item">
+                              <Typography className="detalle-factura-info-label">Dirección:</Typography>
+                              <Typography className="detalle-factura-info-value">{factura.direccion_cliente}</Typography>
+                            </div>
+                          )}
+                        </div>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </div>
+              )}
 
               {/* Detalles de la factura */}
-              <Typography variant="h6" gutterBottom>
-                Detalles de la Factura
-              </Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ mb: 3 }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Descripción</TableCell>
-                      <TableCell align="right">Cantidad</TableCell>
-                      <TableCell align="right">Precio Unitario</TableCell>
-                      <TableCell align="right">Subtotal</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {factura.detalles.map((detalle: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell>{detalle.descripcion}</TableCell>
-                        <TableCell align="right">{detalle.cantidad}</TableCell>
-                        <TableCell align="right">S/ {parseFloat(detalle.precio_unitario).toFixed(2)}</TableCell>
-                        <TableCell align="right">S/ {parseFloat(detalle.subtotal).toFixed(2)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              {/* Totales */}
-              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", mb: 3 }}>
-                <Typography variant="subtitle1">
-                  <strong>Subtotal:</strong> S/ {parseFloat(factura.subtotal).toFixed(2)}
-                </Typography>
-                <Typography variant="subtitle1">
-                  <strong>IGV (18%):</strong> S/ {parseFloat(factura.igv).toFixed(2)}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                  <strong>Total:</strong> S/ {parseFloat(factura.total).toFixed(2)}
-                </Typography>
-              </Box>
+              {factura && factura.detalles && (
+                <div className="detalle-factura-section">
+                  <Box sx={{ p: 3 }}>
+                    <Typography variant="h6" className="detalle-factura-section-title">
+                      <Description className="detalle-factura-section-title-icon" />
+                      Detalles de la Factura
+                    </Typography>
+                    
+                    <TableContainer className="detalle-factura-table-container">
+                      <Table className="detalle-factura-table">
+                        <TableHead className="detalle-factura-table-head">
+                          <TableRow>
+                            <TableCell>Descripción</TableCell>
+                            <TableCell align="right">Cantidad</TableCell>
+                            <TableCell align="right">Precio Unitario</TableCell>
+                            <TableCell align="right">Subtotal</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {factura.detalles.map((detalle: any, index: number) => (
+                            <TableRow key={index} className="detalle-factura-table-row">
+                              <TableCell className="detalle-factura-table-cell">{detalle.descripcion}</TableCell>
+                              <TableCell className="detalle-factura-table-cell" align="right">{detalle.cantidad}</TableCell>
+                              <TableCell className="detalle-factura-table-cell" align="right">
+                                S/ {Number.parseFloat(detalle.precio_unitario).toFixed(2)}
+                              </TableCell>
+                              <TableCell className="detalle-factura-table-cell" align="right">
+                                S/ {Number.parseFloat(detalle.subtotal).toFixed(2)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                    
+                    {/* Totales */}
+                    <div className="detalle-factura-totals-container">
+                      <div className="detalle-factura-total-row">
+                        <Typography className="detalle-factura-total-label">Subtotal:</Typography>
+                        <Typography className="detalle-factura-total-value">
+                          S/ {Number.parseFloat(factura.subtotal).toFixed(2)}
+                        </Typography>
+                      </div>
+                      <div className="detalle-factura-total-row">
+                        <Typography className="detalle-factura-total-label">IGV (18%):</Typography>
+                        <Typography className="detalle-factura-total-value">
+                          S/ {Number.parseFloat(factura.igv).toFixed(2)}
+                        </Typography>
+                      </div>
+                      <div className="detalle-factura-grand-total">
+                        <Typography className="detalle-factura-total-label">Total:</Typography>
+                        <Typography className="detalle-factura-total-value">
+                          S/ {Number.parseFloat(factura.total).toFixed(2)}
+                        </Typography>
+                      </div>
+                    </div>
+                  </Box>
+                </div>
+              )}
 
               {/* Respuesta de SUNAT */}
-              {factura.sunat_response && (
-                <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-                  <Typography variant="h6" gutterBottom>
+              {factura && factura.sunat_response && (
+                <div className="detalle-factura-sunat-response">
+                  <Typography variant="h6" className="detalle-factura-sunat-title">
+                    <CloudDone className="detalle-factura-section-title-icon" />
                     Respuesta de SUNAT
                   </Typography>
-                  <Box sx={{ mb: 2 }}>
-                    <Chip
-                      label={factura.sunat_response.success ? "Aceptada por SUNAT" : "Rechazada por SUNAT"}
-                      color={factura.sunat_response.success ? "success" : "error"}
-                      sx={{ mb: 1 }}
-                    />
-                  </Box>
+                  
+                  <Chip
+                    label={factura.sunat_response.success ? "Aceptada por SUNAT" : "Rechazada por SUNAT"}
+                    color={factura.sunat_response.success ? "success" : "error"}
+                    className="detalle-factura-sunat-chip"
+                  />
+                  
                   {factura.sunat_response.error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                      <Typography variant="subtitle2">
-                        <strong>Código de error:</strong> {factura.sunat_response.error.code}
+                    <Alert severity="error" className="detalle-factura-sunat-error">
+                      <Typography variant="subtitle2" className="detalle-factura-sunat-detail-item">
+                        <span className="detalle-factura-sunat-detail-label">Código de error:</span> {factura.sunat_response.error.code}
                       </Typography>
-                      <Typography variant="body2">
-                        <strong>Mensaje:</strong> {factura.sunat_response.error.message}
+                      <Typography variant="body2" className="detalle-factura-sunat-detail-item">
+                        <span className="detalle-factura-sunat-detail-label">Mensaje:</span> {factura.sunat_response.error.message}
                       </Typography>
                     </Alert>
                   )}
+                  
                   {factura.sunat_response.cdrResponse && (
-                    <Box>
-                      <Typography variant="subtitle2">
-                        <strong>Código CDR:</strong> {factura.sunat_response.cdrResponse.code}
+                    <div className="detalle-factura-sunat-details">
+                      <Typography variant="subtitle2" className="detalle-factura-sunat-detail-item">
+                        <span className="detalle-factura-sunat-detail-label">Código CDR:</span> {factura.sunat_response.cdrResponse.code}
                       </Typography>
-                      <Typography variant="body2">
-                        <strong>Descripción:</strong> {factura.sunat_response.cdrResponse.description}
+                      <Typography variant="body2" className="detalle-factura-sunat-detail-item">
+                        <span className="detalle-factura-sunat-detail-label">Descripción:</span> {factura.sunat_response.cdrResponse.description}
                       </Typography>
-                      {factura.sunat_response.cdrResponse.notes && factura.sunat_response.cdrResponse.notes.length > 0 && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="subtitle2">
-                            <strong>Notas:</strong>
-                          </Typography>
-                          <ul>
-                            {factura.sunat_response.cdrResponse.notes.map((note: string, index: number) => (
-                              <li key={index}>{note}</li>
-                            ))}
-                          </ul>
-                        </Box>
-                      )}
-                    </Box>
+                      
+                      {factura.sunat_response.cdrResponse.notes &&
+                        factura.sunat_response.cdrResponse.notes.length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="subtitle2" className="detalle-factura-sunat-detail-label">
+                              Notas:
+                            </Typography>
+                            <ul className="detalle-factura-sunat-notes">
+                              {factura.sunat_response.cdrResponse.notes.map((note: string, index: number) => (
+                                <li key={index} className="detalle-factura-sunat-note">{note}</li>
+                              ))}
+                            </ul>
+                          </Box>
+                        )}
+                    </div>
                   )}
-                </Paper>
+                </div>
               )}
 
               {/* Botones de acción */}
-              <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-                <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate("/facturas")}>
-                  Volver a la lista
-                </Button>
-                <Box>
-                  <Button
-                    variant="outlined"
-                    startIcon={<Print />}
-                    onClick={handlePrintInvoice}
-                    sx={{ mr: 2 }}
-                    disabled={factura.estado === "Anulada"}
+              {factura && (
+                <div className="detalle-factura-actions">
+                  <Button 
+                    variant="outlined" 
+                    startIcon={<ArrowBack />} 
+                    onClick={() => navigate("/facturas")}
+                    className="detalle-factura-back-button"
                   >
-                    Imprimir
+                    Volver a la lista
                   </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<PictureAsPdf />}
-                    onClick={handleGenerarPDF}
-                    disabled={factura.estado === "Anulada"}
-                  >
-                    Generar PDF
-                  </Button>
-                </Box>
-              </Box>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<Print />}
+                      onClick={handlePrintInvoice}
+                      disabled={factura.estado === "Anulada"}
+                      className="detalle-factura-action-button"
+                    >
+                      Imprimir
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<PictureAsPdf />}
+                      onClick={handleGenerarPDF}
+                      disabled={factura.estado === "Anulada"}
+                      className="detalle-factura-action-button"
+                    >
+                      Generar PDF
+                    </Button>
+                  </Box>
+                </div>
+              )}
             </>
           )}
         </Paper>

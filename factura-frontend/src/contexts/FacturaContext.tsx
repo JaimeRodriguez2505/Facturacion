@@ -1,7 +1,8 @@
 "use client"
 
-import React, { createContext, useState, useContext } from "react"
-import { facturaService, FacturaResponse } from "../service/facturaService"
+import type React from "react"
+import { createContext, useState, useContext, useMemo, useCallback } from "react"
+import { facturaService, type FacturaResponse } from "../service/facturaService"
 
 // Definimos las funciones que tu backend realmente soporta
 interface FacturaContextType {
@@ -10,7 +11,6 @@ interface FacturaContextType {
   createFactura: (facturaData: any) => Promise<FacturaResponse>
   generarPDF: (id: string) => Promise<Blob>
   enviarSunat: (id: string) => Promise<any>
-  
 }
 
 const FacturaContext = createContext<FacturaContextType | undefined>(undefined)
@@ -28,7 +28,7 @@ export const FacturaProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [error, setError] = useState<string | null>(null)
 
   // Crea y emite una factura (POST /invoices/send)
-  const createFactura = async (facturaData: any): Promise<FacturaResponse> => {
+  const createFactura = useCallback(async (facturaData: any): Promise<FacturaResponse> => {
     try {
       setLoading(true)
       setError(null)
@@ -43,10 +43,10 @@ export const FacturaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Genera PDF de una factura (POST /invoices/pdf)
-  const generarPDF = async (id: string): Promise<Blob> => {
+  const generarPDF = useCallback(async (id: string): Promise<Blob> => {
     try {
       setLoading(true)
       setError(null)
@@ -59,10 +59,10 @@ export const FacturaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   // Envía la factura a SUNAT (POST /invoices/xml)
-  const enviarSunat = async (id: string): Promise<any> => {
+  const enviarSunat = useCallback(async (id: string): Promise<any> => {
     try {
       setLoading(true)
       setError(null)
@@ -75,19 +75,20 @@ export const FacturaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  return (
-    <FacturaContext.Provider
-      value={{
-        loading,
-        error,
-        createFactura,
-        generarPDF,
-        enviarSunat,
-      }}
-    >
-      {children}
-    </FacturaContext.Provider>
+  // Memorizar el valor del contexto para evitar renderizados innecesarios
+  const contextValue = useMemo(
+    () => ({
+      loading,
+      error,
+      createFactura,
+      generarPDF,
+      enviarSunat,
+    }),
+    [loading, error, createFactura, generarPDF, enviarSunat],
   )
+
+  return <FacturaContext.Provider value={contextValue}>{children}</FacturaContext.Provider>
 }
+

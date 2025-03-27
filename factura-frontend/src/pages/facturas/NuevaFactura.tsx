@@ -26,10 +26,11 @@ import {
   TableRow,
   InputAdornment,
   Card,
-  CardContent,
   FormControlLabel,
   Checkbox,
   Chip,
+  Fade,
+  Zoom,
 } from "@mui/material"
 import {
   Receipt,
@@ -46,6 +47,9 @@ import {
   ShoppingBag,
   Description,
   Print,
+  Business,
+  Info,
+  ReceiptLong,
 } from "@mui/icons-material"
 import { useNavigate } from "react-router-dom"
 import { useCompany } from "../../contexts/CompanyContext"
@@ -53,6 +57,9 @@ import { useFactura } from "../../contexts/FacturaContext"
 import { useTheme } from "../../contexts/ThemeContext"
 import MainLayout from "../../components/layout/MainLayout"
 import { facturaService } from "../../service/facturaService"
+
+// Importar estilos específicos para esta página
+import "../../css/nueva-factura.css"
 
 // Solo para manejar la estructura de detalles en el Front
 interface DetalleFactura {
@@ -698,8 +705,8 @@ const NuevaFactura: React.FC = () => {
             </thead>
             <tbody>
               ${invoiceData.details
-                .map(
-                  (detalle: any) => `
+        .map(
+          (detalle: any) => `
                 <tr>
                   <td>${detalle.cantidad} ${detalle.unidad}</td>
                   <td>${detalle.descripcion}</td>
@@ -707,8 +714,8 @@ const NuevaFactura: React.FC = () => {
                   <td class="text-right">S/ ${detalle.mtoValorVenta.toFixed(2)}</td>
                 </tr>
               `,
-                )
-                .join("")}
+        )
+        .join("")}
             </tbody>
           </table>
 
@@ -722,14 +729,13 @@ const NuevaFactura: React.FC = () => {
                 <td>I.G.V. (18%):</td>
                 <td class="text-right">S/ ${invoiceData.mtoIGV.toFixed(2)}</td>
               </tr>
-              ${
-                invoiceData.icbper
-                  ? `<tr>
+              ${invoiceData.icbper
+        ? `<tr>
                       <td>ICBPER:</td>
                       <td class="text-right">S/ ${invoiceData.icbper.toFixed(2)}</td>
                     </tr>`
-                  : ""
-              }
+        : ""
+      }
               <tr class="total-row">
                 <td>TOTAL A PAGAR:</td>
                 <td class="text-right">S/ ${invoiceData.mtoImpVenta.toFixed(2)}</td>
@@ -775,7 +781,7 @@ const NuevaFactura: React.FC = () => {
   if (showPreview && invoiceData) {
     return (
       <MainLayout>
-        <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+        <Box className="nueva-factura-container" sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
           {/* DarkMode */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
             <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -794,87 +800,114 @@ const NuevaFactura: React.FC = () => {
             </Tooltip>
           </Box>
 
-          <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-              <Receipt sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-              <Typography variant="h4">Vista Previa de Factura</Typography>
+          <Paper elevation={3} className="nueva-factura-main-card" sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
+            <Box className="nueva-factura-header">
+              <Receipt className="nueva-factura-header-icon" />
+              <Typography variant="h4" className="nueva-factura-title">
+                Vista Previa de Factura
+              </Typography>
             </Box>
 
             {success && (
-              <Alert severity="success" sx={{ mb: 3 }}>
-                {success}
-              </Alert>
+              <Fade in={!!success}>
+                <Alert severity="success" sx={{ mb: 3 }} className="alert-animation">
+                  {success}
+                </Alert>
+              </Fade>
+            )}
+
+            {error && (
+              <Fade in={!!error}>
+                <Alert severity="error" sx={{ mb: 3 }} className="alert-animation">
+                  {error}
+                </Alert>
+              </Fade>
             )}
 
             {/* Información de la empresa */}
-            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    Datos del Emisor
+            <div className="nueva-factura-preview-section">
+              <Typography className="nueva-factura-preview-title">
+                <Business className="nueva-factura-preview-title-icon" />
+                Datos del Emisor
+              </Typography>
+              <div className="nueva-factura-preview-grid">
+                <div>
+                  <Typography className="nueva-factura-preview-label">RUC:</Typography>
+                  <Typography className="nueva-factura-preview-value">{invoiceData.company.ruc}</Typography>
+                </div>
+                <div>
+                  <Typography className="nueva-factura-preview-label">Razón Social:</Typography>
+                  <Typography className="nueva-factura-preview-value">{invoiceData.company.razonSocial}</Typography>
+                </div>
+                <div>
+                  <Typography className="nueva-factura-preview-label">Dirección:</Typography>
+                  <Typography className="nueva-factura-preview-value">
+                    {invoiceData.company.address.direccion}
                   </Typography>
-                  <Typography variant="body1">
-                    <strong>RUC:</strong> {invoiceData.company.ruc}
+                </div>
+              </div>
+            </div>
+
+            {/* Información del documento */}
+            <div className="nueva-factura-preview-section">
+              <Typography className="nueva-factura-preview-title">
+                <ReceiptLong className="nueva-factura-preview-title-icon" />
+                Datos del Documento
+              </Typography>
+              <div className="nueva-factura-preview-grid">
+                <div>
+                  <Typography className="nueva-factura-preview-label">Tipo:</Typography>
+                  <Typography className="nueva-factura-preview-value">FACTURA ELECTRÓNICA</Typography>
+                </div>
+                <div>
+                  <Typography className="nueva-factura-preview-label">Serie-Correlativo:</Typography>
+                  <Typography className="nueva-factura-preview-value">
+                    {invoiceData.serie}-{invoiceData.correlativo}
                   </Typography>
-                  <Typography variant="body1">
-                    <strong>Razón Social:</strong> {invoiceData.company.razonSocial}
+                </div>
+                <div>
+                  <Typography className="nueva-factura-preview-label">Fecha de Emisión:</Typography>
+                  <Typography className="nueva-factura-preview-value">
+                    {invoiceData.fechaEmision.split("T")[0]}
                   </Typography>
-                  <Typography variant="body1">
-                    <strong>Dirección:</strong> {invoiceData.company.address.direccion}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="h6" gutterBottom>
-                    Datos del Documento
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Tipo:</strong> FACTURA ELECTRÓNICA
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Serie-Correlativo:</strong> {invoiceData.serie}-{invoiceData.correlativo}
-                  </Typography>
-                  <Typography variant="body1">
-                    <strong>Fecha de Emisión:</strong> {invoiceData.fechaEmision.split("T")[0]}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
+                </div>
+              </div>
+            </div>
 
             {/* Información del cliente */}
-            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <div className="nueva-factura-preview-section">
+              <Typography className="nueva-factura-preview-title">
+                <Person className="nueva-factura-preview-title-icon" />
                 Datos del Cliente
               </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>
-                      {invoiceData.client.tipoDoc === "6"
-                        ? "RUC"
-                        : invoiceData.client.tipoDoc === "1"
-                          ? "DNI"
-                          : "Doc. Identidad"}
-                      :
-                    </strong>{" "}
-                    {invoiceData.client.numDoc}
+              <div className="nueva-factura-preview-grid">
+                <div>
+                  <Typography className="nueva-factura-preview-label">
+                    {invoiceData.client.tipoDoc === "6"
+                      ? "RUC"
+                      : invoiceData.client.tipoDoc === "1"
+                        ? "DNI"
+                        : "Doc. Identidad"}
+                    :
                   </Typography>
-                </Grid>
-                <Grid item xs={12} md={6}>
-                  <Typography variant="body1">
-                    <strong>Nombre/Razón Social:</strong> {invoiceData.client.rznSocial}
-                  </Typography>
-                </Grid>
-              </Grid>
-            </Paper>
+                  <Typography className="nueva-factura-preview-value">{invoiceData.client.numDoc}</Typography>
+                </div>
+                <div>
+                  <Typography className="nueva-factura-preview-label">Nombre/Razón Social:</Typography>
+                  <Typography className="nueva-factura-preview-value">{invoiceData.client.rznSocial}</Typography>
+                </div>
+              </div>
+            </div>
 
             {/* Detalles de la factura */}
-            <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h6" gutterBottom>
+            <div className="nueva-factura-preview-section">
+              <Typography className="nueva-factura-preview-title">
+                <Description className="nueva-factura-preview-title-icon" />
                 Detalles de la Factura
               </Typography>
-              <TableContainer component={Paper} variant="outlined" sx={{ mb: 2 }}>
-                <Table>
-                  <TableHead>
+              <TableContainer component={Paper} variant="outlined" className="nueva-factura-table-container">
+                <Table className="nueva-factura-table">
+                  <TableHead className="nueva-factura-table-head">
                     <TableRow>
                       <TableCell>Descripción</TableCell>
                       <TableCell align="right">Cantidad</TableCell>
@@ -887,18 +920,26 @@ const NuevaFactura: React.FC = () => {
                   </TableHead>
                   <TableBody>
                     {invoiceData.details.map((detalle: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell>{detalle.descripcion}</TableCell>
-                        <TableCell align="right">{detalle.cantidad}</TableCell>
-                        <TableCell align="right">S/ {detalle.mtoPrecioUnitario.toFixed(2)}</TableCell>
-                        <TableCell align="right">S/ {detalle.mtoValorVenta.toFixed(2)}</TableCell>
-                        <TableCell align="right">S/ {detalle.igv.toFixed(2)}</TableCell>
+                      <TableRow key={index} className="nueva-factura-table-row">
+                        <TableCell className="nueva-factura-table-cell">{detalle.descripcion}</TableCell>
+                        <TableCell className="nueva-factura-table-cell" align="right">
+                          {detalle.cantidad}
+                        </TableCell>
+                        <TableCell className="nueva-factura-table-cell" align="right">
+                          S/ {detalle.mtoPrecioUnitario.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="nueva-factura-table-cell" align="right">
+                          S/ {detalle.mtoValorVenta.toFixed(2)}
+                        </TableCell>
+                        <TableCell className="nueva-factura-table-cell" align="right">
+                          S/ {detalle.igv.toFixed(2)}
+                        </TableCell>
                         {invoiceType === "icbper" && (
-                          <TableCell align="right">
+                          <TableCell className="nueva-factura-table-cell" align="right">
                             {detalle.icbper ? `S/ ${detalle.icbper.toFixed(2)}` : "N/A"}
                           </TableCell>
                         )}
-                        <TableCell align="right">
+                        <TableCell className="nueva-factura-table-cell" align="right">
                           S/ {(detalle.mtoValorVenta + detalle.igv + (detalle.icbper || 0)).toFixed(2)}
                         </TableCell>
                       </TableRow>
@@ -908,316 +949,204 @@ const NuevaFactura: React.FC = () => {
               </TableContainer>
 
               {/* Totales */}
-              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                <Typography variant="subtitle1">
-                  <strong>Operaciones Gravadas:</strong> S/ {invoiceData.mtoOperGravadas.toFixed(2)}
-                </Typography>
-                <Typography variant="subtitle1">
-                  <strong>IGV (18%):</strong> S/ {invoiceData.mtoIGV.toFixed(2)}
-                </Typography>
-                {invoiceData.icbper > 0 && (
-                  <Typography variant="subtitle1" color="secondary">
-                    <strong>ICBPER:</strong> S/ {invoiceData.icbper.toFixed(2)}
+              <div className="nueva-factura-totals-container">
+                <div className="nueva-factura-total-row">
+                  <Typography className="nueva-factura-total-label">Operaciones Gravadas:</Typography>
+                  <Typography className="nueva-factura-total-value">
+                    S/ {invoiceData.mtoOperGravadas.toFixed(2)}
                   </Typography>
+                </div>
+                <div className="nueva-factura-total-row">
+                  <Typography className="nueva-factura-total-label">IGV (18%):</Typography>
+                  <Typography className="nueva-factura-total-value">S/ {invoiceData.mtoIGV.toFixed(2)}</Typography>
+                </div>
+                {invoiceData.icbper > 0 && (
+                  <div className="nueva-factura-total-row">
+                    <Typography className="nueva-factura-total-label">ICBPER:</Typography>
+                    <Typography className="nueva-factura-total-value">S/ {invoiceData.icbper.toFixed(2)}</Typography>
+                  </div>
                 )}
-                <Typography variant="h6" sx={{ fontWeight: "bold", mt: 1 }}>
-                  <strong>Importe Total:</strong> S/ {invoiceData.mtoImpVenta.toFixed(2)}
-                </Typography>
+                <div className="nueva-factura-grand-total">
+                  <Typography className="nueva-factura-total-label">Importe Total:</Typography>
+                  <Typography className="nueva-factura-total-value">S/ {invoiceData.mtoImpVenta.toFixed(2)}</Typography>
+                </div>
                 <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
                   {invoiceData.legends[0].value}
                 </Typography>
-              </Box>
-            </Paper>
+              </div>
+            </div>
 
             {xmlResponse && (
-              <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
+              <div className="nueva-factura-xml-container">
+                <Typography className="nueva-factura-preview-title">
+                  <Info className="nueva-factura-preview-title-icon" />
                   Representación de la Factura
                 </Typography>
 
-                <Box sx={{ mt: 2, mb: 2, display: "flex", gap: 2 }}>
+                <div className="nueva-factura-xml-buttons">
                   <Button
                     variant="contained"
                     color="primary"
                     onClick={() => setShowInvoiceRepresentation(!showInvoiceRepresentation)}
+                    className="nueva-factura-xml-button"
+                    size="large"
                   >
                     {showInvoiceRepresentation ? "Ocultar factura emitida" : "Visualizar factura emitida"}
                   </Button>
 
                   {showInvoiceRepresentation && (
-                    <Button variant="contained" color="secondary" startIcon={<Print />} onClick={handlePrintInvoice}>
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      startIcon={<Print />}
+                      onClick={handlePrintInvoice}
+                      className="nueva-factura-xml-button"
+                      size="large"
+                    >
                       Imprimir Factura
                     </Button>
                   )}
-
-                  <Button
-                    onClick={() => {
-                      const xmlWindow = window.open("", "_blank")
-                      xmlWindow?.document.write(`
-                        <html>
-                          <head>
-                            <title>XML Factura</title>
-                            <style>
-                              body { font-family: monospace; white-space: pre; padding: 20px; }
-                            </style>
-                          </head>
-                          <body>${xmlResponse.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</body>
-                        </html>
-                      `)
-                      xmlWindow?.document.close()
-                    }}
-                    variant="outlined"
-                    size="small"
-                  >
-                    Ver XML Original
-                  </Button>
-                </Box>
+                </div>
 
                 {showInvoiceRepresentation && (
-                  <Box sx={{ mt: 3 }}>
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        overflow: "hidden",
-                        maxWidth: "800px",
-                        margin: "0 auto",
-                        boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                      }}
-                    >
-                      {/* Cabecera de la factura */}
-                      <Box sx={{ display: "flex", flexDirection: "row", p: 0 }}>
-                        {/* Logo y datos de la empresa */}
-                        <Box
-                          sx={{
-                            flex: 1,
-                            p: 3,
-                            borderRight: "1px solid",
-                            borderColor: "divider",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "flex-start",
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: "bold", mb: 1 }}>
-                            {invoiceData.company.razonSocial}
-                          </Typography>
-                          <Typography variant="body2" sx={{ mb: 0.5 }}>
-                            RUC: {invoiceData.company.ruc}
-                          </Typography>
-                          <Typography variant="body2">Dirección: {invoiceData.company.address.direccion}</Typography>
-                        </Box>
-
-                        {/* Datos del documento */}
-                        <Box
-                          sx={{
-                            width: "40%",
-                            p: 3,
-                            textAlign: "right",
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center",
-                            bgcolor: "primary.light",
-                            color: "primary.contrastText",
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                            FACTURA ELECTRÓNICA
-                          </Typography>
-                          <Typography variant="h5" sx={{ my: 1, fontWeight: "bold" }}>
-                            {invoiceData.serie}-{invoiceData.correlativo}
-                          </Typography>
-                          <Typography variant="body2">Fecha: {invoiceData.fechaEmision.split("T")[0]}</Typography>
-                        </Box>
-                      </Box>
-
-                      {/* Datos del cliente */}
-                      <Box
-                        sx={{
-                          p: 2,
-                          borderTop: "1px solid",
-                          borderBottom: "1px solid",
-                          borderColor: "divider",
-                          bgcolor: "grey.50",
-                        }}
-                      >
-                        <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>
-                          Datos del Cliente
+                  <div className="nueva-factura-representation">
+                    {/* Cabecera de la factura */}
+                    <div className="nueva-factura-representation-header">
+                      {/* Logo y datos de la empresa */}
+                      <div className="nueva-factura-representation-company">
+                        <Typography className="nueva-factura-representation-company-name">
+                          {invoiceData.company.razonSocial}
                         </Typography>
-                        <Grid container spacing={2}>
-                          <Grid item xs={6}>
-                            <Typography variant="body2">
-                              <strong>RUC:</strong> {invoiceData.client.numDoc}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Nombre/Razón Social:</strong> {invoiceData.client.rznSocial}
-                            </Typography>
-                          </Grid>
-                          <Grid item xs={6}>
-                            <Typography variant="body2">
-                              <strong>Fecha Emisión:</strong> {invoiceData.fechaEmision.split("T")[0]}
-                            </Typography>
-                            <Typography variant="body2">
-                              <strong>Moneda:</strong> {invoiceData.tipoMoneda}
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </Box>
+                        <Typography className="nueva-factura-representation-company-info">
+                          RUC: {invoiceData.company.ruc}
+                        </Typography>
+                        <Typography className="nueva-factura-representation-company-info">
+                          Dirección: {invoiceData.company.address.direccion}
+                        </Typography>
+                      </div>
 
-                      {/* Tabla de detalles */}
-                      <TableContainer>
-                        <Table size="small">
-                          <TableHead>
-                            <TableRow sx={{ backgroundColor: "grey.100" }}>
-                              <TableCell width="10%">Cantidad</TableCell>
-                              <TableCell width="50%">Descripción</TableCell>
-                              <TableCell width="20%" align="right">
-                                Valor Unitario
-                              </TableCell>
-                              <TableCell width="20%" align="right">
-                                Valor Venta
-                              </TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {invoiceData.details.map((detalle: any, index: number) => (
-                              <TableRow key={index}>
-                                <TableCell>
-                                  {detalle.cantidad} {detalle.unidad}
-                                </TableCell>
-                                <TableCell>{detalle.descripcion}</TableCell>
-                                <TableCell align="right">S/ {detalle.mtoValorUnitario.toFixed(2)}</TableCell>
-                                <TableCell align="right">S/ {detalle.mtoValorVenta.toFixed(2)}</TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </TableContainer>
+                      {/* Datos del documento */}
+                      <div className="nueva-factura-representation-document">
+                        <Typography className="nueva-factura-representation-document-title">
+                          FACTURA ELECTRÓNICA
+                        </Typography>
+                        <Typography className="nueva-factura-representation-document-number">
+                          {invoiceData.serie}-{invoiceData.correlativo}
+                        </Typography>
+                        <Typography className="nueva-factura-representation-document-date">
+                          Fecha: {invoiceData.fechaEmision.split("T")[0]}
+                        </Typography>
+                      </div>
+                    </div>
 
-                      {/* Totales y resumen */}
-                      <Grid container>
-                        <Grid
-                          item
-                          xs={6}
-                          sx={{
-                            p: 3,
-                            borderRight: "1px solid",
-                            borderTop: "1px solid",
-                            borderColor: "divider",
-                            bgcolor: "grey.50",
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ mb: 1, fontStyle: "italic" }}>
-                            <strong>SON:</strong> {invoiceData.legends[0].value.replace("SON: ", "")}
-                          </Typography>
+                    {/* Datos del cliente */}
+                    <div className="nueva-factura-representation-client">
+                      <Typography className="nueva-factura-representation-client-title">Datos del Cliente</Typography>
+                      <div className="nueva-factura-representation-client-grid">
+                        <div>
+                          <span className="nueva-factura-representation-client-label">RUC:</span>
+                          <span className="nueva-factura-representation-client-value">{invoiceData.client.numDoc}</span>
+                        </div>
+                        <div>
+                          <span className="nueva-factura-representation-client-label">Nombre/Razón Social:</span>
+                          <span className="nueva-factura-representation-client-value">
+                            {invoiceData.client.rznSocial}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="nueva-factura-representation-client-label">Fecha Emisión:</span>
+                          <span className="nueva-factura-representation-client-value">
+                            {invoiceData.fechaEmision.split("T")[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="nueva-factura-representation-client-label">Moneda:</span>
+                          <span className="nueva-factura-representation-client-value">{invoiceData.tipoMoneda}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                          <Box sx={{ mt: 4 }}>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              <strong>Representación impresa de la Factura Electrónica</strong>
-                            </Typography>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              Consulte su documento en: www.sunat.gob.pe
-                            </Typography>
-                          </Box>
-                        </Grid>
+                    {/* Tabla de detalles */}
+                    <table className="nueva-factura-representation-details">
+                      <thead>
+                        <tr>
+                          <th style={{ width: "10%" }}>Cantidad</th>
+                          <th style={{ width: "50%" }}>Descripción</th>
+                          <th style={{ width: "20%", textAlign: "right" }}>Valor Unitario</th>
+                          <th style={{ width: "20%", textAlign: "right" }}>Valor Venta</th>
+                        </tr>
+                      </thead>
 
-                        <Grid item xs={6} sx={{ p: 3, borderTop: "1px solid", borderColor: "divider" }}>
-                          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                width: "100%",
-                                maxWidth: 250,
-                                mb: 1,
-                              }}
-                            >
-                              <Typography variant="body2">
-                                <strong>Op. Gravadas:</strong>
-                              </Typography>
-                              <Typography variant="body2">S/ {invoiceData.mtoOperGravadas.toFixed(2)}</Typography>
-                            </Box>
+                      <tbody>
+                        {invoiceData.details.map((detalle: any, index: number) => (
+                          <tr key={index}>
+                            <td>
+                              {detalle.cantidad} {detalle.unidad}
+                            </td>
+                            <td>{detalle.descripcion}</td>
+                            <td align="right">S/ {detalle.mtoValorUnitario.toFixed(2)}</td>
+                            <td align="right">S/ {detalle.mtoValorVenta.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
 
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                width: "100%",
-                                maxWidth: 250,
-                                mb: 1,
-                              }}
-                            >
-                              <Typography variant="body2">
-                                <strong>I.G.V.:</strong>
-                              </Typography>
-                              <Typography variant="body2">S/ {invoiceData.mtoIGV.toFixed(2)}</Typography>
-                            </Box>
+                    {/* Totales y resumen */}
+                    <div className="nueva-factura-representation-totals">
+                      <div className="nueva-factura-representation-words">
+                        <strong>SON:</strong> {invoiceData.legends[0].value.replace("SON: ", "")}
+                      </div>
 
-                            {invoiceData.icbper > 0 && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  width: "100%",
-                                  maxWidth: 250,
-                                  mb: 1,
-                                }}
-                              >
-                                <Typography variant="body2">
-                                  <strong>ICBPER:</strong>
-                                </Typography>
-                                <Typography variant="body2">S/ {invoiceData.icbper.toFixed(2)}</Typography>
-                              </Box>
-                            )}
+                      <div className="nueva-factura-representation-amounts">
+                        <div className="nueva-factura-representation-amount-row">
+                          <span className="nueva-factura-representation-amount-label">Op. Gravadas:</span>
+                          <span className="nueva-factura-representation-amount-value">
+                            S/ {invoiceData.mtoOperGravadas.toFixed(2)}
+                          </span>
+                        </div>
 
-                            <Divider sx={{ width: "100%", maxWidth: 250, my: 1 }} />
+                        <div className="nueva-factura-representation-amount-row">
+                          <span className="nueva-factura-representation-amount-label">I.G.V.:</span>
+                          <span className="nueva-factura-representation-amount-value">
+                            S/ {invoiceData.mtoIGV.toFixed(2)}
+                          </span>
+                        </div>
 
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                width: "100%",
-                                maxWidth: 250,
-                                bgcolor: "primary.light",
-                                color: "primary.contrastText",
-                                p: 1,
-                                borderRadius: 1,
-                              }}
-                            >
-                              <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                                TOTAL:
-                              </Typography>
-                              <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                                S/ {invoiceData.mtoImpVenta.toFixed(2)}
-                              </Typography>
-                            </Box>
+                        {invoiceData.icbper > 0 && (
+                          <div className="nueva-factura-representation-amount-row">
+                            <span className="nueva-factura-representation-amount-label">ICBPER:</span>
+                            <span className="nueva-factura-representation-amount-value">
+                              S/ {invoiceData.icbper.toFixed(2)}
+                            </span>
+                          </div>
+                        )}
 
-                            {/* QR Code placeholder */}
-                            <Box
-                              sx={{
-                                mt: 2,
-                                width: 100,
-                                height: 100,
-                                border: "1px solid",
-                                borderColor: "divider",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                            >
-                              <Typography variant="caption">QR Code</Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Paper>
-                  </Box>
+                        <div className="nueva-factura-representation-total-row">
+                          <span className="nueva-factura-representation-total-label">TOTAL:</span>
+                          <span className="nueva-factura-representation-total-value">
+                            S/ {invoiceData.mtoImpVenta.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="nueva-factura-representation-footer">
+                      <Typography>Representación impresa de la Factura Electrónica</Typography>
+                      <Typography>Consulte su documento en: www.sunat.gob.pe</Typography>
+                    </div>
+                  </div>
                 )}
-              </Paper>
+              </div>
             )}
 
             {/* Botones de acción */}
-            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 3 }}>
-              <Button variant="outlined" startIcon={<ArrowBack />} onClick={handleBackToInvoice}>
+            <div className="nueva-factura-preview-actions">
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
+                onClick={handleBackToInvoice}
+                className="nueva-factura-back-button"
+              >
                 Volver a la Factura
               </Button>
               <Box>
@@ -1227,14 +1156,20 @@ const NuevaFactura: React.FC = () => {
                   onClick={handleGenerarPDF}
                   disabled={loading || loading2}
                   sx={{ mr: 2 }}
+                  className="nueva-factura-preview-button"
                 >
                   Descargar PDF
                 </Button>
-                <Button variant="contained" startIcon={<Add />} onClick={handleNewInvoice}>
+                <Button
+                  variant="contained"
+                  startIcon={<Add />}
+                  onClick={handleNewInvoice}
+                  className="nueva-factura-preview-button"
+                >
                   Nueva Factura
                 </Button>
               </Box>
-            </Box>
+            </div>
           </Paper>
         </Box>
       </MainLayout>
@@ -1245,7 +1180,7 @@ const NuevaFactura: React.FC = () => {
   if (!invoiceType) {
     return (
       <MainLayout>
-        <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+        <Box className="nueva-factura-container" sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
           {/* DarkMode */}
           <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
             <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -1264,70 +1199,51 @@ const NuevaFactura: React.FC = () => {
             </Tooltip>
           </Box>
 
-          <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-              <Receipt sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-              <Typography variant="h4">Nueva Factura</Typography>
+          <Paper elevation={3} className="nueva-factura-main-card" sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
+            <Box className="nueva-factura-header">
+              <Receipt className="nueva-factura-header-icon" />
+              <Typography variant="h4" className="nueva-factura-title">
+                Nueva Factura
+              </Typography>
             </Box>
 
             <Typography variant="body1" color="text.secondary" paragraph>
               Seleccione el tipo de factura que desea generar:
             </Typography>
 
-            <Grid container spacing={3} sx={{ mt: 2 }}>
-              <Grid item xs={12} md={6}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    cursor: "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: 6,
-                    },
-                  }}
-                  onClick={() => handleSelectInvoiceType("regular")}
-                >
-                  <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 4 }}>
-                    <Description sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
-                    <Typography variant="h5" gutterBottom>
-                      Factura Regular
-                    </Typography>
-                    <Typography variant="body1" align="center">
+            <div className="nueva-factura-type-container">
+              <Zoom in={true} style={{ transitionDelay: "100ms" }}>
+                <Card className="nueva-factura-type-card" onClick={() => handleSelectInvoiceType("regular")}>
+                  <div className="nueva-factura-type-content">
+                    <Description className="nueva-factura-type-icon" />
+                    <Typography className="nueva-factura-type-title">Factura Regular</Typography>
+                    <Typography className="nueva-factura-type-description">
                       Factura estándar para productos y servicios sin impuesto a bolsas plásticas.
                     </Typography>
-                  </CardContent>
+                  </div>
                 </Card>
-              </Grid>
+              </Zoom>
 
-              <Grid item xs={12} md={6}>
-                <Card
-                  sx={{
-                    height: "100%",
-                    cursor: "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    "&:hover": {
-                      transform: "translateY(-5px)",
-                      boxShadow: 6,
-                    },
-                  }}
-                  onClick={() => handleSelectInvoiceType("icbper")}
-                >
-                  <CardContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", p: 4 }}>
-                    <ShoppingBag sx={{ fontSize: 60, color: "secondary.main", mb: 2 }} />
-                    <Typography variant="h5" gutterBottom>
-                      Factura con ICBPER
-                    </Typography>
-                    <Typography variant="body1" align="center">
+              <Zoom in={true} style={{ transitionDelay: "300ms" }}>
+                <Card className="nueva-factura-type-card" onClick={() => handleSelectInvoiceType("icbper")}>
+                  <div className="nueva-factura-type-content">
+                    <ShoppingBag className="nueva-factura-type-icon icbper" />
+                    <Typography className="nueva-factura-type-title">Factura con ICBPER</Typography>
+                    <Typography className="nueva-factura-type-description">
                       Factura que incluye productos con impuesto al consumo de bolsas plásticas (ICBPER).
                     </Typography>
-                  </CardContent>
+                  </div>
                 </Card>
-              </Grid>
-            </Grid>
+              </Zoom>
+            </div>
 
             <Box sx={{ mt: 4, display: "flex", justifyContent: "flex-start" }}>
-              <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => navigate(-1)}>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
+                onClick={() => navigate(-1)}
+                className="nueva-factura-back-button"
+              >
                 Volver
               </Button>
             </Box>
@@ -1340,7 +1256,7 @@ const NuevaFactura: React.FC = () => {
   // Formulario de factura (caso por defecto)
   return (
     <MainLayout>
-      <Box sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
+      <Box className="nueva-factura-container" sx={{ flexGrow: 1, p: { xs: 2, md: 3 } }}>
         {/* DarkMode */}
         <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
           <Tooltip title={darkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
@@ -1360,37 +1276,45 @@ const NuevaFactura: React.FC = () => {
         </Box>
 
         {selectedCompany && (
-          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle1">Empresa Emisora:</Typography>
-            <Typography variant="body1">
-              <strong>RUC:</strong> {selectedCompany.ruc}
-            </Typography>
-            <Typography variant="body1">
-              <strong>Razón Social:</strong> {selectedCompany.razon_social}
-            </Typography>
-            <Typography variant="body1">
-              <strong>Dirección:</strong> {selectedCompany.direccion}
-            </Typography>
+          <Paper variant="outlined" className="nueva-factura-company-info" sx={{ p: 2, mb: 2 }}>
+            <Typography className="nueva-factura-company-title">Empresa Emisora:</Typography>
+            <div className="nueva-factura-company-detail">
+              <Typography className="nueva-factura-company-label">RUC:</Typography>
+              <Typography className="nueva-factura-company-value">{selectedCompany.ruc}</Typography>
+            </div>
+            <div className="nueva-factura-company-detail">
+              <Typography className="nueva-factura-company-label">Razón Social:</Typography>
+              <Typography className="nueva-factura-company-value">{selectedCompany.razon_social}</Typography>
+            </div>
+            <div className="nueva-factura-company-detail">
+              <Typography className="nueva-factura-company-label">Dirección:</Typography>
+              <Typography className="nueva-factura-company-value">{selectedCompany.direccion}</Typography>
+            </div>
           </Paper>
         )}
 
-        <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
-          <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
-            <Receipt sx={{ fontSize: 40, color: "primary.main", mr: 2 }} />
-            <Typography variant="h4">
+        <Paper elevation={3} className="nueva-factura-main-card" sx={{ p: { xs: 2, md: 4 }, mb: 4 }}>
+          <Box className="nueva-factura-header">
+            <Receipt className="nueva-factura-header-icon" />
+            <Typography variant="h4" className="nueva-factura-title">
               {invoiceType === "regular" ? "Nueva Factura" : "Nueva Factura con ICBPER"}
             </Typography>
           </Box>
 
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
+            <Fade in={!!error}>
+              <Alert severity="error" sx={{ mb: 3 }} className="alert-animation">
+                {error}
+              </Alert>
+            </Fade>
           )}
+
           {success && (
-            <Alert severity="success" sx={{ mb: 3 }}>
-              {success}
-            </Alert>
+            <Fade in={!!success}>
+              <Alert severity="success" sx={{ mb: 3 }} className="alert-animation">
+                {success}
+              </Alert>
+            </Fade>
           )}
 
           {!selectedCompany ? (
@@ -1404,10 +1328,11 @@ const NuevaFactura: React.FC = () => {
             <form onSubmit={handleEmitirFactura}>
               <Grid container spacing={3}>
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" className="nueva-factura-section-title">
+                    <Info className="nueva-factura-section-title-icon" />
                     Información de la Factura
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider className="nueva-factura-divider" />
                 </Grid>
 
                 {/* Serie / Correlativo / Fecha */}
@@ -1418,6 +1343,7 @@ const NuevaFactura: React.FC = () => {
                     name="serie"
                     value={formData.serie}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -1435,6 +1361,7 @@ const NuevaFactura: React.FC = () => {
                     name="correlativo"
                     value={formData.correlativo}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                   />
                 </Grid>
 
@@ -1446,6 +1373,7 @@ const NuevaFactura: React.FC = () => {
                     type="date"
                     value={formData.fechaEmision}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -1458,14 +1386,15 @@ const NuevaFactura: React.FC = () => {
 
                 {/* Datos del Cliente */}
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                  <Typography variant="h6" className="nueva-factura-section-title">
+                    <Person className="nueva-factura-section-title-icon" />
                     Datos del Cliente
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider className="nueva-factura-divider" />
                 </Grid>
 
                 <Grid item xs={12} md={4}>
-                  <FormControl fullWidth>
+                  <FormControl fullWidth className="nueva-factura-form-field">
                     <InputLabel id="tipo-doc-cliente-label">Tipo de Documento</InputLabel>
                     <Select
                       labelId="tipo-doc-cliente-label"
@@ -1489,6 +1418,7 @@ const NuevaFactura: React.FC = () => {
                     name="numDocCliente"
                     value={formData.numDocCliente}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
@@ -1506,6 +1436,7 @@ const NuevaFactura: React.FC = () => {
                     name="nombreCliente"
                     value={formData.nombreCliente}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                   />
                 </Grid>
 
@@ -1516,60 +1447,49 @@ const NuevaFactura: React.FC = () => {
                     name="direccionCliente"
                     value={formData.direccionCliente}
                     onChange={handleInputChange}
+                    className="nueva-factura-form-field"
                   />
                 </Grid>
 
                 {/* Detalles */}
                 <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                  <Typography variant="h6" className="nueva-factura-section-title">
+                    <Description className="nueva-factura-section-title-icon" />
                     Detalles de la Factura
                   </Typography>
-                  <Divider sx={{ mb: 2 }} />
+                  <Divider className="nueva-factura-divider" />
                 </Grid>
 
                 {/* Configuración ICBPER si es factura con ICBPER */}
                 {invoiceType === "icbper" && (
                   <Grid item xs={12}>
-                    <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: "info.light", color: "info.contrastText" }}>
-                      <Typography variant="subtitle1" gutterBottom>
+                    <div className="nueva-factura-icbper-config">
+                      <Typography className="nueva-factura-icbper-title">
                         Configuración ICBPER (Impuesto al Consumo de Bolsas Plásticas)
                       </Typography>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} md={6}>
-                          <TextField
-                            fullWidth
-                            label="Factor ICBPER (S/ por bolsa)"
-                            type="number"
-                            value={factorIcbper}
-                            onChange={(e) => setFactorIcbper(Number(e.target.value))}
-                            inputProps={{ min: 0.01, step: 0.01 }}
-                            helperText="Valor actual según SUNAT: S/ 0.20 por bolsa (2023)"
-                          />
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                          <Typography variant="body2">
-                            El ICBPER se aplicará a los productos que marques como "Bolsa plástica" al agregarlos.
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </Paper>
+                      <div className="nueva-factura-icbper-grid">
+                        <TextField
+                          fullWidth
+                          label="Factor ICBPER (S/ por bolsa)"
+                          type="number"
+                          value={factorIcbper}
+                          onChange={(e) => setFactorIcbper(Number(e.target.value))}
+                          inputProps={{ min: 0.01, step: 0.01 }}
+                          helperText="Valor actual según SUNAT: S/ 0.20 por bolsa (2023)"
+                          className="nueva-factura-form-field"
+                        />
+                        <Typography className="nueva-factura-icbper-help">
+                          El ICBPER se aplicará a los productos que marques como "Bolsa plástica" al agregarlos.
+                        </Typography>
+                      </div>
+                    </div>
                   </Grid>
                 )}
 
                 {/* Agregar Detalle */}
                 <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      mb: 3,
-                      p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 1,
-                    }}
-                  >
-                    <Typography variant="subtitle1" gutterBottom>
-                      Agregar Nuevo Detalle
-                    </Typography>
+                  <div className="nueva-factura-detalle-container">
+                    <Typography className="nueva-factura-detalle-title">Agregar Nuevo Detalle</Typography>
                     <Grid container spacing={2} alignItems="center">
                       <Grid item xs={12} md={invoiceType === "icbper" ? 3 : 5}>
                         <TextField
@@ -1578,6 +1498,7 @@ const NuevaFactura: React.FC = () => {
                           name="descripcion"
                           value={nuevoDetalle.descripcion}
                           onChange={handleDetalleChange}
+                          className="nueva-factura-form-field"
                         />
                       </Grid>
                       <Grid item xs={12} md={2}>
@@ -1589,6 +1510,7 @@ const NuevaFactura: React.FC = () => {
                           value={nuevoDetalle.cantidad}
                           onChange={handleDetalleChange}
                           inputProps={{ min: 1 }}
+                          className="nueva-factura-form-field"
                         />
                       </Grid>
                       <Grid item xs={12} md={2}>
@@ -1600,6 +1522,7 @@ const NuevaFactura: React.FC = () => {
                           value={nuevoDetalle.precioUnitario}
                           onChange={handleDetalleChange}
                           inputProps={{ min: 0, step: 0.01 }}
+                          className="nueva-factura-form-field"
                           InputProps={{
                             startAdornment: (
                               <InputAdornment position="start">
@@ -1636,19 +1559,20 @@ const NuevaFactura: React.FC = () => {
                           startIcon={<Add />}
                           onClick={agregarDetalle}
                           fullWidth
+                          className="nueva-factura-submit-button"
                         >
                           Agregar
                         </Button>
                       </Grid>
                     </Grid>
-                  </Box>
+                  </div>
                 </Grid>
 
                 {/* Lista de detalles */}
                 <Grid item xs={12}>
-                  <TableContainer component={Paper} variant="outlined">
-                    <Table>
-                      <TableHead>
+                  <TableContainer component={Paper} variant="outlined" className="nueva-factura-table-container">
+                    <Table className="nueva-factura-table">
+                      <TableHead className="nueva-factura-table-head">
                         <TableRow>
                           <TableCell>Descripción</TableCell>
                           <TableCell align="right">Cantidad</TableCell>
@@ -1661,19 +1585,29 @@ const NuevaFactura: React.FC = () => {
                       <TableBody>
                         {detalles.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={invoiceType === "icbper" ? 6 : 5} align="center">
+                            <TableCell
+                              colSpan={invoiceType === "icbper" ? 6 : 5}
+                              align="center"
+                              className="nueva-factura-empty-row"
+                            >
                               No hay detalles agregados
                             </TableCell>
                           </TableRow>
                         ) : (
                           detalles.map((detalle) => (
-                            <TableRow key={detalle.id}>
-                              <TableCell>{detalle.descripcion}</TableCell>
-                              <TableCell align="right">{detalle.cantidad}</TableCell>
-                              <TableCell align="right">{detalle.precioUnitario.toFixed(2)}</TableCell>
-                              <TableCell align="right">{detalle.subtotal.toFixed(2)}</TableCell>
+                            <TableRow key={detalle.id} className="nueva-factura-table-row">
+                              <TableCell className="nueva-factura-table-cell">{detalle.descripcion}</TableCell>
+                              <TableCell className="nueva-factura-table-cell" align="right">
+                                {detalle.cantidad}
+                              </TableCell>
+                              <TableCell className="nueva-factura-table-cell" align="right">
+                                {detalle.precioUnitario.toFixed(2)}
+                              </TableCell>
+                              <TableCell className="nueva-factura-table-cell" align="right">
+                                {detalle.subtotal.toFixed(2)}
+                              </TableCell>
                               {invoiceType === "icbper" && (
-                                <TableCell align="center">
+                                <TableCell className="nueva-factura-table-cell" align="center">
                                   {detalle.icbper ? (
                                     <Tooltip title={`S/ ${factorIcbper} por unidad`}>
                                       <Chip
@@ -1687,7 +1621,7 @@ const NuevaFactura: React.FC = () => {
                                   )}
                                 </TableCell>
                               )}
-                              <TableCell align="center">
+                              <TableCell className="nueva-factura-table-cell" align="center">
                                 <IconButton color="error" size="small" onClick={() => eliminarDetalle(detalle.id)}>
                                   <Delete />
                                 </IconButton>
@@ -1702,44 +1636,53 @@ const NuevaFactura: React.FC = () => {
 
                 {/* Totales */}
                 <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-end",
-                      mt: 2,
-                    }}
-                  >
-                    <Typography variant="subtitle1">Subtotal: S/ {subtotal.toFixed(2)}</Typography>
-                    <Typography variant="subtitle1">IGV (18%): S/ {igv.toFixed(2)}</Typography>
+                  <div className="nueva-factura-totals-container">
+                    <div className="nueva-factura-total-row">
+                      <Typography className="nueva-factura-total-label">Subtotal:</Typography>
+                      <Typography className="nueva-factura-total-value">S/ {subtotal.toFixed(2)}</Typography>
+                    </div>
+                    <div className="nueva-factura-total-row">
+                      <Typography className="nueva-factura-total-label">IGV (18%):</Typography>
+                      <Typography className="nueva-factura-total-value">S/ {igv.toFixed(2)}</Typography>
+                    </div>
                     {invoiceType === "icbper" && icbperTotal > 0 && (
-                      <Typography variant="subtitle1" color="secondary">
-                        ICBPER: S/ {icbperTotal.toFixed(2)}
-                      </Typography>
+                      <div className="nueva-factura-total-row">
+                        <Typography className="nueva-factura-total-label">ICBPER:</Typography>
+                        <Typography className="nueva-factura-total-value">S/ {icbperTotal.toFixed(2)}</Typography>
+                      </div>
                     )}
-                    <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                      Total: S/ {total.toFixed(2)}
-                    </Typography>
-                  </Box>
+                    <div className="nueva-factura-grand-total">
+                      <Typography className="nueva-factura-total-label">Total:</Typography>
+                      <Typography className="nueva-factura-total-value">S/ {total.toFixed(2)}</Typography>
+                    </div>
+                  </div>
                 </Grid>
 
                 {/* Botones finales */}
-                <Grid item xs={12} sx={{ mt: 3, display: "flex", justifyContent: "space-between" }}>
-                  <Button variant="outlined" startIcon={<ArrowBack />} onClick={() => setInvoiceType(null)}>
-                    Cambiar tipo de factura
-                  </Button>
+                <Grid item xs={12}>
+                  <div className="nueva-factura-actions">
+                    <Button
+                      variant="outlined"
+                      startIcon={<ArrowBack />}
+                      onClick={() => setInvoiceType(null)}
+                      className="nueva-factura-back-button"
+                    >
+                      Cambiar tipo de factura
+                    </Button>
 
-                  <Box>
-                    {/* Botón para Emitir Factura (para /invoices/send) */}
                     <Button
                       type="submit"
                       variant="contained"
                       startIcon={<Save />}
                       disabled={loading || loading2 || detalles.length === 0}
+                      className="nueva-factura-submit-button"
+                      size="large"
+                      color="primary"
+                      sx={{ fontWeight: "bold", px: 4, py: 1 }}
                     >
                       {loading || loading2 ? <CircularProgress size={24} /> : "Emitir Factura"}
                     </Button>
-                  </Box>
+                  </div>
                 </Grid>
               </Grid>
             </form>

@@ -29,6 +29,15 @@ body {
   min-width: 320px;
   min-height: 100vh;
   transition: background-color 0.3s ease, color 0.3s ease;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: initial;
 }
 
 body.dark {
@@ -156,5 +165,14 @@ button:focus-visible {
 
 .dark .MuiButton-contained:hover {
   background-color: #303f9f;
+}
+
+/* Estilos para centrar correctamente los elementos de carga */
+.MuiCircularProgress-root {
+  margin: 0 auto;
+}
+
+.MuiBox-root[display="flex"][justifyContent="center"] {
+  width: 100%;
 }
 
